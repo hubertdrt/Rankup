@@ -1,4 +1,4 @@
 echo ".env" > .gitignore
-echo "node_modules/" >> .gitignore
+echo "backend/node_modules/" >> .gitignore
 echo "client_secret*.txt" >> .gitignore
 echo "Code secret*.txt" >> .gitignore

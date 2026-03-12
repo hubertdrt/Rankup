@@ -58,7 +58,7 @@ app.get('/auth/callback', async (req, res) => {
     sessions[sessionId] = { tokens, email: userInfo.email };
 
     // Rediriger vers le frontend avec le sessionId
-    res.redirect(`http://localhost:5500/index.html?session=${sessionId}&email=${encodeURIComponent(userInfo.email)}`);
+    res.redirect(`https://app.rankbase.fr/index.html?session=${sessionId}&email=${encodeURIComponent(userInfo.email)}`);
   } catch (err) {
     console.error('Erreur callback OAuth:', err.message);
     res.status(500).send('Erreur authentification : ' + err.message);
@@ -473,7 +473,7 @@ Sois direct, concis, actionnable. Pas de blabla.`;
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'http://localhost:3002',
+        'HTTP-Referer': 'https://app.rankbase.fr',
         'X-Title': 'Rankup SEO',
       },
     });

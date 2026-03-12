@@ -1391,7 +1391,7 @@
 
 <script>
   // ── STATE ──
-  const BACKEND = 'http://qp5n4d4nj65pib0f6ukysfc9.51.38.189.124.sslip.io';
+  const BACKEND = 'htts://api.rankbase.fr';
 
   const state = {
     source: 'gsc',
@@ -1530,7 +1530,7 @@
       const data = await res.json();
       window.location.href = data.url;
     } catch(e) {
-      showToast('Impossible de contacter le backend. Vérifiez que le serveur tourne sur localhost:3002.', 'error', 6000);
+      showToast('Impossible de contacter le serveur. Veuillez réessayer dans quelques instants.', 'error', 6000);
     }
   }
 

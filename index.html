@@ -2152,9 +2152,12 @@
     const allValues = datasets.flatMap(d => d.data).filter(v => v !== null && v !== undefined);
 
     // Vérifier si assez de points pour afficher un graphique utile
-    if (noDataEl) noDataEl.style.display = allValues.length < 3 ? 'flex' : 'none';
-    if (ctx) ctx.style.display = allValues.length < 3 ? 'none' : 'block';
-    if (allValues.length < 3) return;
+    // On compte le nombre de dates uniques dans les tendances
+    const uniqueDates = commonLabels.length;
+    const hasEnoughData = uniqueDates >= 3;
+    if (noDataEl) noDataEl.style.display = hasEnoughData ? 'none' : 'flex';
+    if (ctx) ctx.style.display = hasEnoughData ? 'block' : 'none';
+    if (!hasEnoughData) return;
     const minPos = allValues.length ? Math.max(1, Math.floor(Math.min(...allValues)) - 2) : 1;
     const maxPos = allValues.length ? Math.ceil(Math.max(...allValues)) + 3 : 30;
 
@@ -2874,7 +2877,8 @@
     // Générer le CSV
     const csvContent = rows.map(row =>
       row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-    ).join('');
+    ).join('
+');
 
     const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

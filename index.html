@@ -1986,6 +1986,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          session: state.session,
           gscData: { topKeywords, lowCtr, opportunities: state.opportunities.slice(0,5) },
           ga4Data: {
             highBounce: state.ga4Pages.filter(p => p.bounceRate > 70).slice(0,5),

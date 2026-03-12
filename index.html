@@ -213,7 +213,7 @@
     .card-action:hover { background: var(--purple-mid); }
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
     .three-col { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
-    .chart-wrap { position: relative; height: 220px; }
+    .chart-wrap { position: relative; height: 280px; }
 
     /* ══ AI INSIGHT ══ */
     .ai-insight { background: linear-gradient(135deg, var(--purple-light) 0%, var(--purple-light) 100%); border: 1.5px solid var(--purple-mid); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px; animation: fadeUp 0.5s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
@@ -2047,33 +2047,145 @@
     return Array.from({length: n}, (_, i) => Math.max(1, Math.round(start + (end-start)*(i/(n-1)) + (Math.random()-.5)*2)));
   }
 
-  function buildPositionChart() {
+  async function buildPositionChart() {
     const ctx = document.getElementById('positionChart');
     if (!ctx) return;
-    const labels = Array.from({length:30}, (_, i) => { const d = new Date(); d.setDate(d.getDate()-(29-i)); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}); });
+
     const top5 = state.keywords.slice(0, 5);
+    if (!top5.length) return;
+
     const colors = ['#7C3AED','#22C55E','#EF4444','#F59E0B','#6366F1'];
     if (posChart) posChart.destroy();
-    posChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: top5.map((k, i) => ({
+
+    // Récupérer les vraies tendances depuis GSC pour les 5 premiers mots-clés
+    let datasets = [];
+    let commonLabels = [];
+
+    try {
+      const trends = await Promise.all(top5.map(k =>
+        fetch(`${BACKEND}/gsc/keyword-trend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: state.session, siteUrl: state.siteUrl, keyword: k.kw, days: 30 })
+        }).then(r => r.json()).catch(() => ({ trend: [] }))
+      ));
+
+      // Construire les labels depuis la première tendance disponible
+      const firstWithData = trends.find(t => t.trend && t.trend.length > 0);
+      if (firstWithData) {
+        commonLabels = firstWithData.trend.map(d => {
+          const [year, month, day] = d.date.split('-');
+          return `${day}/${month}`;
+        });
+      }
+
+      // Si aucune vraie donnée, fallback sur données simulées
+      if (!commonLabels.length) {
+        commonLabels = Array.from({length:30}, (_, i) => {
+          const d = new Date(); d.setDate(d.getDate()-(29-i));
+          return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
+        });
+        datasets = top5.map((k, i) => ({
           label: k.kw,
           data: genTrend(k.prev || k.pos + 2, k.pos, 30),
           borderColor: colors[i],
           tension: 0.4, pointRadius: 0, borderWidth: 2,
-        }))
-      },
+          fill: false,
+        }));
+      } else {
+        datasets = trends.map((t, i) => {
+          const posMap = {};
+          (t.trend || []).forEach(d => { posMap[d.date] = d.position; });
+          // Aligner les données sur les labels communs
+          const firstTrend = trends.find(tr => tr.trend && tr.trend.length > 0);
+          const data = (firstTrend?.trend || []).map(d => posMap[d.date] || null);
+          return {
+            label: top5[i].kw,
+            data,
+            borderColor: colors[i],
+            tension: 0.4,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            borderWidth: 2,
+            fill: false,
+            spanGaps: true,  // relie les points même si données manquantes
+          };
+        });
+      }
+    } catch(e) {
+      // Fallback silencieux sur données simulées
+      commonLabels = Array.from({length:30}, (_, i) => {
+        const d = new Date(); d.setDate(d.getDate()-(29-i));
+        return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
+      });
+      datasets = top5.map((k, i) => ({
+        label: k.kw,
+        data: genTrend(k.prev || k.pos + 2, k.pos, 30),
+        borderColor: colors[i],
+        tension: 0.4, pointRadius: 0, borderWidth: 2,
+      }));
+    }
+
+    // Calculer les min/max réels pour bien remplir le graphique
+    const allValues = datasets.flatMap(d => d.data).filter(v => v !== null && v !== undefined);
+    const minPos = allValues.length ? Math.max(1, Math.floor(Math.min(...allValues)) - 2) : 1;
+    const maxPos = allValues.length ? Math.ceil(Math.max(...allValues)) + 3 : 30;
+
+    posChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: commonLabels, datasets },
       options: {
-        responsive:true, maintainAspectRatio:false,
+        responsive: true,
+        maintainAspectRatio: false,
         scales: {
-          y: { reverse:true, min:1, max:30, grid:{color:'#F0EEF8'}, ticks:{font:{family:'Poppins',size:11},color:'#6A6C7B',stepSize:5} },
-          x: { grid:{display:false}, ticks:{font:{family:'Poppins',size:10},color:'#6A6C7B',maxTicksLimit:8} }
+          y: {
+            reverse: true,   // position 1 en haut = meilleur
+            min: minPos,     // s'adapte aux vraies données
+            max: maxPos,
+            grid: { color: '#F0EEF8' },
+            title: {
+              display: true,
+              text: 'Position Google',
+              font: { family: 'Poppins', size: 11 },
+              color: '#6A6C7B',
+            },
+            ticks: {
+              font: { family: 'Poppins', size: 11 },
+              color: '#6A6C7B',
+              stepSize: Math.ceil((maxPos - minPos) / 5),
+              callback: v => `#${v}`,  // affiche "#3" au lieu de "3"
+            }
+          },
+          x: {
+            grid: { display: false },
+            title: {
+              display: true,
+              text: '30 derniers jours',
+              font: { family: 'Poppins', size: 11 },
+              color: '#6A6C7B',
+            },
+            ticks: {
+              font: { family: 'Poppins', size: 10 },
+              color: '#6A6C7B',
+              maxTicksLimit: 8,
+            }
+          }
         },
         plugins: {
-          legend:{position:'bottom',labels:{font:{family:'Poppins',size:11},color:'#6A6C7B',boxWidth:12,padding:16}},
-          tooltip:{backgroundColor:'#2F3037',titleFont:{family:'Poppins',size:12},bodyFont:{family:'Poppins',size:11},padding:10,cornerRadius:8,callbacks:{label:c=>` Position ${c.raw}`}}
+          legend: {
+            position: 'bottom',
+            labels: { font: { family: 'Poppins', size: 11 }, color: '#6A6C7B', boxWidth: 12, padding: 16 }
+          },
+          tooltip: {
+            backgroundColor: '#2F3037',
+            titleFont: { family: 'Poppins', size: 12 },
+            bodyFont: { family: 'Poppins', size: 11 },
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: {
+              label: c => ` ${c.dataset.label} — Position #${c.raw}`
+            }
+          }
         }
       }
     });

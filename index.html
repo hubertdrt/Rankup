@@ -1114,7 +1114,7 @@
           <span class="ai-tag"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> IA</span>
           <span class="ai-insight-title">Résumé Search Console — cette semaine</span>
         </div>
-        <p class="ai-insight-text">Analyse en cours...</p>
+        <p class="ai-insight-text" id="ai-dashboard-gsc">Lancez l'analyse pour obtenir un résumé de vos positions.</p>
         <button class="btn-ai-detail" onclick="showSection('ai')">Analyse complète →</button>
       </div>
 
@@ -1198,7 +1198,7 @@
           <span class="ai-tag" style="background:#E8710A;">IA</span>
           <span class="ai-insight-title">Analyse comportementale</span>
         </div>
-        <p class="ai-insight-text">Analyse en cours...</p>
+        <p class="ai-insight-text" id="ai-dashboard-analytics">Lancez l'analyse pour obtenir des recommandations comportementales.</p>
         <button class="btn-ai-detail" onclick="showSection('ai')">Recommandations →</button>
       </div>
 
@@ -1355,19 +1355,19 @@
       <div style="display:flex; flex-direction:column; gap:16px;">
         <div class="ai-insight" style="margin:0;">
           <div class="ai-insight-header"><span class="ai-tag" style="background:var(--success);">Gains</span><span class="ai-insight-title">Ce qui fonctionne bien</span></div>
-          <p class="ai-insight-text" id="ai-text-gains" style="color:var(--mid);font-style:italic;">Chargement...</p>
+          <p class="ai-insight-text" id="ai-text-gains" style="color:var(--mid);font-style:italic;">Cliquez sur "Actualiser" pour lancer l'analyse.</p>
         </div>
         <div class="ai-insight" style="margin:0; background:linear-gradient(135deg, var(--warning-light), var(--warning-light)); border-color:#FCD34D;">
           <div class="ai-insight-header"><span class="ai-tag" style="background:var(--warning);">Problèmes</span><span class="ai-insight-title">CTR faible ou rebond élevé</span></div>
-          <p class="ai-insight-text" id="ai-text-problems" style="color:var(--mid);font-style:italic;">Chargement...</p>
+          <p class="ai-insight-text" id="ai-text-problems" style="color:var(--mid);font-style:italic;">—</p>
         </div>
         <div class="ai-insight" style="margin:0; background:linear-gradient(135deg, var(--danger-light), var(--danger-light)); border-color:#FECACA;">
           <div class="ai-insight-header"><span class="ai-tag" style="background:var(--danger);">Opportunités</span><span class="ai-insight-title">Mots-clés à prioriser</span></div>
-          <p class="ai-insight-text" id="ai-text-opportunities" style="color:var(--mid);font-style:italic;">Chargement...</p>
+          <p class="ai-insight-text" id="ai-text-opportunities" style="color:var(--mid);font-style:italic;">—</p>
         </div>
         <div class="ai-insight" style="margin:0; background:linear-gradient(135deg, var(--success-light), var(--success-light)); border-color:#86EFAC;">
           <div class="ai-insight-header"><span class="ai-tag" style="background:var(--success);">Actions prioritaires</span><span class="ai-insight-title">Ce que vous devriez faire cette semaine</span></div>
-          <p class="ai-insight-text" id="ai-text-actions" style="color:var(--mid);font-style:italic;">Chargement...</p>
+          <p class="ai-insight-text" id="ai-text-actions" style="color:var(--mid);font-style:italic;">—</p>
         </div>
       </div>
     </div>
@@ -2038,6 +2038,19 @@
         if (p) p.innerHTML = fmt(sections.problems);
         if (o) o.innerHTML = fmt(sections.opportunities);
         if (a) a.innerHTML = fmt(sections.actions);
+
+        // Mettre à jour les widgets résumé du dashboard
+        const dashGsc = document.getElementById('ai-dashboard-gsc');
+        const dashAnalytics = document.getElementById('ai-dashboard-analytics');
+        const stripHtml = s => s ? s.replace(/<[^>]*>/g, '') : '';
+        if (dashGsc && sections.gains) {
+          const text = stripHtml(fmt(sections.gains));
+          dashGsc.textContent = text.slice(0, 130) + (text.length > 130 ? '…' : '');
+        }
+        if (dashAnalytics && sections.actions) {
+          const text = stripHtml(fmt(sections.actions));
+          dashAnalytics.textContent = text.slice(0, 130) + (text.length > 130 ? '…' : '');
+        }
       }
     } catch(e) {
       console.error('Erreur AI insight:', e);

@@ -91,7 +91,7 @@ const generalLimiter = rateLimit({
 // Protège contre le brute force du callback OAuth
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 50,
   message: { error: 'Trop de tentatives de connexion. Réessayez dans quelques minutes.' },
 });
 
@@ -251,7 +251,7 @@ app.get('/user/me', (req, res) => {
   }
   const { email } = sessions[session];
   // ⚠️ STUB : plan hardcodé 'free' — à remplacer par Supabase
-  res.json({ email, plan: 'premium' });
+  res.json({ email, plan: 'free' });
 });
 
 
@@ -475,6 +475,7 @@ app.get('/ga4/properties', async (req, res) => {
     const accounts = accountsData.accounts || [];
 
     if (accounts.length === 0) return res.json({ properties: [] });
+
     const allProperties = [];
     for (const account of accounts) {
       try {

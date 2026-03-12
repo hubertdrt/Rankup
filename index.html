@@ -657,8 +657,10 @@
     .onboarding-modal {
       background: var(--white); border-radius: 28px;
       width: 100%; max-width: 540px;
+      max-height: calc(100vh - 48px);
       box-shadow: 0 32px 100px rgba(124,58,237,0.25);
       overflow: hidden;
+      display: flex; flex-direction: column;
       animation: modalIn 0.4s cubic-bezier(0.22,1,0.36,1) both;
     }
     .onboarding-progress {
@@ -670,6 +672,9 @@
     }
     .onboarding-body {
       padding: 48px 48px 40px;
+      overflow-y: auto;
+      flex: 1;
+      -webkit-overflow-scrolling: touch;
     }
     .onboarding-step-label {
       font-size: 11px; font-weight: 600; color: var(--purple);
@@ -715,6 +720,7 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 24px 48px; border-top: 1px solid var(--border);
       background: var(--light);
+      flex-shrink: 0;
     }
     .btn-onboarding-skip {
       font-family: 'Poppins', sans-serif; font-size: 12px; color: var(--mid);
@@ -2728,7 +2734,8 @@
     // Générer le CSV
     const csvContent = rows.map(row =>
       row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-    ).join('');
+    ).join('
+');
 
     const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

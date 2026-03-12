@@ -2066,28 +2066,32 @@
         fetch(`${BACKEND}/gsc/keyword-trend`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session: state.session, siteUrl: state.siteUrl, keyword: k.kw, days: 30 })
+          body: JSON.stringify({ session: state.session, siteUrl: state.siteUrl, keyword: k.kw, days: state.period })
         }).then(r => r.json()).catch(() => ({ trend: [] }))
       ));
 
       // Construire les labels depuis la première tendance disponible
       const firstWithData = trends.find(t => t.trend && t.trend.length > 0);
       if (firstWithData) {
-        commonLabels = firstWithData.trend.map(d => {
+        // Trier les dates dans l'ordre chronologique (du plus ancien au plus récent)
+        const sortedTrend = [...firstWithData.trend].sort((a, b) => a.date.localeCompare(b.date));
+        commonLabels = sortedTrend.map(d => {
           const [year, month, day] = d.date.split('-');
-          return `${day}/${month}`;
+          // Pour les longues périodes (> 90j), afficher mois/année
+          return state.period > 90 ? `${month}/${year.slice(2)}` : `${day}/${month}`;
         });
       }
 
       // Si aucune vraie donnée, fallback sur données simulées
       if (!commonLabels.length) {
-        commonLabels = Array.from({length:30}, (_, i) => {
-          const d = new Date(); d.setDate(d.getDate()-(29-i));
+        const n = state.period;
+        commonLabels = Array.from({length: n}, (_, i) => {
+          const d = new Date(); d.setDate(d.getDate()-(n-1-i));
           return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
         });
         datasets = top5.map((k, i) => ({
           label: k.kw,
-          data: genTrend(k.prev || k.pos + 2, k.pos, 30),
+          data: genTrend(k.prev || k.pos + 2, k.pos, n),
           borderColor: colors[i],
           tension: 0.4, pointRadius: 0, borderWidth: 2,
           fill: false,
@@ -2096,9 +2100,10 @@
         datasets = trends.map((t, i) => {
           const posMap = {};
           (t.trend || []).forEach(d => { posMap[d.date] = d.position; });
-          // Aligner les données sur les labels communs
+          // Aligner les données sur les labels communs (triés chronologiquement)
           const firstTrend = trends.find(tr => tr.trend && tr.trend.length > 0);
-          const data = (firstTrend?.trend || []).map(d => posMap[d.date] || null);
+          const sortedFirst = [...(firstTrend?.trend || [])].sort((a, b) => a.date.localeCompare(b.date));
+          const data = sortedFirst.map(d => posMap[d.date] || null);
           return {
             label: top5[i].kw,
             data,
@@ -2114,13 +2119,14 @@
       }
     } catch(e) {
       // Fallback silencieux sur données simulées
-      commonLabels = Array.from({length:30}, (_, i) => {
-        const d = new Date(); d.setDate(d.getDate()-(29-i));
+      const nFallback = state.period;
+      commonLabels = Array.from({length: nFallback}, (_, i) => {
+        const d = new Date(); d.setDate(d.getDate()-(nFallback-1-i));
         return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
       });
       datasets = top5.map((k, i) => ({
         label: k.kw,
-        data: genTrend(k.prev || k.pos + 2, k.pos, 30),
+        data: genTrend(k.prev || k.pos + 2, k.pos, nFallback),
         borderColor: colors[i],
         tension: 0.4, pointRadius: 0, borderWidth: 2,
       }));
@@ -2160,7 +2166,7 @@
             grid: { display: false },
             title: {
               display: true,
-              text: '30 derniers jours',
+              text: state.period > 90 ? (state.period === 480 ? '16 mois' : Math.round(state.period/30)+' mois') : state.period+' derniers jours',
               font: { family: 'Poppins', size: 11 },
               color: '#6A6C7B',
             },

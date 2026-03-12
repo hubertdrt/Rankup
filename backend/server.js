@@ -58,7 +58,7 @@ app.get('/auth/callback', async (req, res) => {
     sessions[sessionId] = { tokens, email: userInfo.email };
 
     // Rediriger vers le frontend avec le sessionId
-    res.redirect(`https://app.rankbase.fr/index.html?session=${sessionId}&email=${encodeURIComponent(userInfo.email)}`);
+    res.redirect(`https://app.rankbase.fr/?session=${sessionId}&email=${encodeURIComponent(userInfo.email)}`);
   } catch (err) {
     console.error('Erreur callback OAuth:', err.message);
     res.status(500).send('Erreur authentification : ' + err.message);

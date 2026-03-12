@@ -543,8 +543,8 @@
     <a href="#faq">FAQ</a>
   </div>
   <div class="nav-cta">
-    <a href="index.html" class="btn-ghost">Se connecter</a>
-    <a href="index.html" class="btn-primary">Commencer — c'est gratuit</a>
+    <a href="/" class="btn-ghost">Se connecter</a>
+    <a href="/" class="btn-primary">Commencer — c'est gratuit</a>
   </div>
 </nav>
 
@@ -566,11 +566,11 @@
   </p>
 
   <div class="hero-actions">
-    <a href="index.html?demo=1" class="btn-hero">
+    <a href="/?demo=1" class="btn-hero">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
       Voir une démo
     </a>
-    <a href="index.html" class="btn-hero-ghost">Connexion gratuite</a>
+    <a href="/" class="btn-hero-ghost">Connexion gratuite</a>
   </div>
 
   <p class="hero-note">
@@ -793,7 +793,7 @@
           <li class="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Analyse IA</li>
           <li class="off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Export CSV</li>
         </ul>
-        <a href="index.html" class="price-btn free">Commencer gratuitement</a>
+        <a href="/" class="price-btn free">Commencer gratuitement</a>
       </div>
 
       <div class="price-card featured">
@@ -810,7 +810,7 @@
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Export CSV</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Support prioritaire</li>
         </ul>
-        <a href="index.html" class="price-btn premium">Passer Premium →</a>
+        <a href="/" class="price-btn premium">Passer Premium →</a>
       </div>
 
     </div>
@@ -887,7 +887,7 @@
   <div class="reveal">
     <h2>Prêt à voir votre SEO<br/><em>autrement ?</em></h2>
     <p>Connectez Google Search Console en 2 minutes.<br/>Gratuit pour commencer, sans carte bancaire.</p>
-    <a href="index.html?demo=1" class="btn-hero" style="display:inline-flex;margin:0 auto;">
+    <a href="/?demo=1" class="btn-hero" style="display:inline-flex;margin:0 auto;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
       Voir une démo
     </a>
@@ -904,8 +904,8 @@
       <span class="footer-text">© 2025 Rankup · Fait avec ❤️ pour les passionnés de SEO</span>
     </div>
     <div class="footer-links">
-      <a href="index.html">Application</a>
-      <a href="privacy.html">Confidentialité</a>
+      <a href="/">Application</a>
+      <a href="privacy">Confidentialité</a>
       <a href="/cdn-cgi/l/email-protection#157d7079797a5567747b7e60653b746565">Contact</a>
     </div>
   </div>
@@ -940,7 +940,15 @@
   }
 
   // ── NAV scroll style ──
+  // ── NAV scroll style ──
   window.addEventListener('scroll', () => {
     const nav = document.querySelector('nav');
     if (window.scrollY > 40) {
-      na
+      nav.style.background = 'rgba(14,14,20,0.97)';
+    } else {
+      nav.style.background = 'rgba(14,14,20,0.85)';
+    }
+  });
+</script>
+</body>
+</html>

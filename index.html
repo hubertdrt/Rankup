@@ -816,15 +816,18 @@
       width: 480px; max-width: calc(100vw - 32px); z-index: 200;
       animation: modalIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
       overflow: hidden;
+      max-height: calc(100vh - 80px);
+      display: flex; flex-direction: column;
     }
     .site-picker-header {
       padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
     .site-picker-header h3 {
       font-family: 'Butler', Georgia, serif; font-size: 16px; color: var(--dark); margin-bottom: 4px;
     }
     .site-picker-header p { font-size: 12px; color: var(--mid); }
-    .site-picker-list { padding: 8px; max-height: 320px; overflow-y: auto; }
+    .site-picker-list { padding: 8px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
     .site-picker-item {
       display: flex; align-items: center; gap: 12px;
       padding: 12px 16px; border-radius: 10px; cursor: pointer;
@@ -1395,7 +1398,7 @@
 
 <script>
   // ── STATE ──
-  const BACKEND = 'https://api.rankbase.fr';
+  const BACKEND = 'http://localhost:3002';
 
   const state = {
     source: 'gsc',
@@ -2725,7 +2728,8 @@
     // Générer le CSV
     const csvContent = rows.map(row =>
       row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-    ).join('');
+    ).join('
+');
 
     const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

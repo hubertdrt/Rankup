@@ -510,6 +510,20 @@
       .topbar-site { font-size: 11px; padding: 5px 8px; max-width: 130px; min-width: 0; }
       .topbar-site span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
       .source-switch { display: none !important; }
+      .source-switch-mobile {
+        display: flex;
+        margin: 0 0 16px 0;
+        background: var(--light);
+        border-radius: 12px;
+        padding: 4px;
+        border: 1px solid var(--border);
+      }
+      .source-switch-mobile .source-btn {
+        flex: 1;
+        justify-content: center;
+        font-size: 13px;
+        padding: 10px 8px;
+      }
       #topbar-site { display: none !important; }
       #period-picker { display: none !important; }
       .btn-filters-toggle { display: flex !important; }
@@ -1670,6 +1684,7 @@
     document.getElementById('dashboard-screen').style.display = 'block';
     document.getElementById('topbar-site').style.display = 'flex';
     document.getElementById('source-switch').style.display = 'flex';
+    document.getElementById('source-switch-mobile').style.display = 'flex';
     document.getElementById('period-picker').style.display = 'flex';
     document.getElementById('last-update').style.display = 'flex';
     document.getElementById('btn-connect-top').style.display = 'none';
@@ -1720,6 +1735,7 @@
     document.getElementById('dashboard-screen').style.display = 'block';
     document.getElementById('topbar-site').style.display = 'flex';
     document.getElementById('source-switch').style.display = 'flex';
+    document.getElementById('source-switch-mobile').style.display = 'flex';
     document.getElementById('period-picker').style.display = 'flex';
     document.getElementById('last-update').style.display = 'flex';
     document.getElementById('btn-connect-top').style.display = 'none';
@@ -2061,6 +2077,16 @@
   function switchSource(source) {
     state.source = source;
     document.getElementById('gsc-view').style.display = source === 'gsc' ? 'block' : 'none';
+    // Sync boutons desktop
+    const btnGsc = document.getElementById('btn-gsc');
+    const btnAnalytics = document.getElementById('btn-analytics');
+    if (btnGsc) btnGsc.classList.toggle('active', source === 'gsc');
+    if (btnAnalytics) btnAnalytics.classList.toggle('active', source === 'analytics');
+    // Sync boutons mobile
+    const btnGscM = document.getElementById('btn-gsc-mobile');
+    const btnAnalyticsM = document.getElementById('btn-analytics-mobile');
+    if (btnGscM) btnGscM.classList.toggle('active', source === 'gsc');
+    if (btnAnalyticsM) btnAnalyticsM.classList.toggle('active', source === 'analytics');
     document.getElementById('analytics-view').style.display = source === 'analytics' ? 'block' : 'none';
     document.getElementById('btn-gsc').classList.toggle('active', source === 'gsc');
     document.getElementById('btn-analytics').classList.toggle('active', source === 'analytics');

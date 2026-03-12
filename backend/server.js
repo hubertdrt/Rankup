@@ -251,7 +251,7 @@ app.get('/user/me', (req, res) => {
   }
   const { email } = sessions[session];
   // ⚠️ STUB : plan hardcodé 'free' — à remplacer par Supabase
-  res.json({ email, plan: 'free' });
+  res.json({ email, plan: 'premium' });
 });
 
 

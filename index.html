@@ -966,11 +966,11 @@
   </div>
 
   <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px;">
-    <a href="/landing" style="font-size:11px;color:var(--mid);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;" onmouseover="this.style.color='var(--purple)'" onmouseout="this.style.color='var(--mid)'">
+    <a href="landing.html" style="font-size:11px;color:var(--mid);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;" onmouseover="this.style.color='var(--purple)'" onmouseout="this.style.color='var(--mid)'">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       À propos de Rankup
     </a>
-    <a href="/privacy" target="_blank" style="font-size:11px;color:var(--mid);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;" onmouseover="this.style.color='var(--purple)'" onmouseout="this.style.color='var(--mid)'">
+    <a href="privacy.html" target="_blank" style="font-size:11px;color:var(--mid);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;" onmouseover="this.style.color='var(--purple)'" onmouseout="this.style.color='var(--mid)'">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Politique de confidentialité
     </a>
@@ -1391,7 +1391,7 @@
 
 <script>
   // ── STATE ──
-  const BACKEND = 'https://api.rankbase.fr';
+  const BACKEND = 'http://localhost:3002';
 
   const state = {
     source: 'gsc',
@@ -1530,7 +1530,7 @@
       const data = await res.json();
       window.location.href = data.url;
     } catch(e) {
-      showToast('Impossible de contacter le serveur. Veuillez réessayer dans quelques instants.', 'error', 6000);
+      showToast('Impossible de contacter le backend. Vérifiez que le serveur tourne sur localhost:3002.', 'error', 6000);
     }
   }
 
@@ -2721,7 +2721,8 @@
     // Générer le CSV
     const csvContent = rows.map(row =>
       row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-    ).join('');
+    ).join('
+');
 
     const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

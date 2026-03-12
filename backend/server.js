@@ -442,19 +442,31 @@ app.post('/ga4/behavior', async (req, res) => {
 app.post('/ai/analyze', async (req, res) => {
   const { gscData, ga4Data, siteUrl } = req.body;
 
+  const hasGainers = gscData?.gainers?.length > 0;
+  const hasLosers = gscData?.losers?.length > 0;
+  const hasLowCtr = gscData?.lowCtr?.length > 0;
+  const hasOpportunities = gscData?.opportunities?.length > 0;
+  const hasHighBounce = ga4Data?.highBounce?.length > 0;
+  const hasBestPages = ga4Data?.bestPages?.length > 0;
+
   const prompt = `Tu es un expert SEO. Analyse ces données et fournis un rapport concis en français.
 
 Site : ${siteUrl}
 
 Données Search Console (7 derniers jours) :
-- Mots-clés en progression : ${JSON.stringify(gscData?.gainers?.slice(0,5) || [])}
-- Mots-clés en recul : ${JSON.stringify(gscData?.losers?.slice(0,5) || [])}
-- CTR faibles (position < 10 mais CTR < 3%) : ${JSON.stringify(gscData?.lowCtr?.slice(0,5) || [])}
-- Opportunités (pos 8-20) : ${JSON.stringify(gscData?.opportunities?.slice(0,5) || [])}
+- Mots-clés en progression : ${hasGainers ? JSON.stringify(gscData.gainers.slice(0,5)) : 'Aucun mot-clé en progression détecté sur cette période.'}
+- Mots-clés en recul : ${hasLosers ? JSON.stringify(gscData.losers.slice(0,5)) : 'Aucun mot-clé en recul détecté.'}
+- CTR faibles (position < 10 mais CTR < 3%) : ${hasLowCtr ? JSON.stringify(gscData.lowCtr.slice(0,5)) : 'Aucun problème de CTR détecté.'}
+- Opportunités (pos 8-20) : ${hasOpportunities ? JSON.stringify(gscData.opportunities.slice(0,5)) : 'Aucune opportunité détectée.'}
 
 Données Analytics (trafic organique) :
-- Pages avec fort rebond (> 70%) : ${JSON.stringify(ga4Data?.highBounce?.slice(0,5) || [])}
-- Meilleures pages (rebond < 40%) : ${JSON.stringify(ga4Data?.bestPages?.slice(0,3) || [])}
+- Pages avec fort rebond (> 70%) : ${hasHighBounce ? JSON.stringify(ga4Data.highBounce.slice(0,5)) : 'Aucune page à fort rebond détectée.'}
+- Meilleures pages (rebond < 40%) : ${hasBestPages ? JSON.stringify(ga4Data.bestPages.slice(0,3)) : 'Aucune donnée disponible.'}
+
+RÈGLES IMPORTANTES :
+- Si une section n'a pas de données, dis-le clairement et positivement (ex: "Aucune progression notable cette semaine — le trafic est stable.").
+- Ne tire JAMAIS de conclusion négative à partir d'une absence de données.
+- Ne commente que ce qui est présent dans les données fournies.
 
 Réponds avec 4 sections bien séparées par ### :
 ### Gains — Ce qui progresse et pourquoi
@@ -462,7 +474,7 @@ Réponds avec 4 sections bien séparées par ### :
 ### Opportunités — Les 3 mots-clés à prioriser cette semaine
 ### Actions — 3 actions concrètes à faire maintenant (courtes et précises)
 
-Sois direct, concis, actionnable. Pas de blabla.`;
+Sois direct, concis, actionnable. Pas de blabla.\`;
 
   try {
     const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {

@@ -153,6 +153,7 @@
     .source-btn.disabled { opacity: 0.35; cursor: default; pointer-events: none; }
     .source-btn.disabled:hover { background: transparent; }
 
+    .btn-connect.hidden { display: none !important; }
     .btn-connect {
       font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600;
       background: var(--purple-light); color: var(--purple);
@@ -171,6 +172,7 @@
 
     /* ══ CONNECT SCREEN ══ */
     #connect-screen { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 64px); }
+    #connect-screen.hidden { display: none !important; }
     .connect-card { background: var(--white); border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-md); padding: 56px 48px; text-align: center; max-width: 500px; width: 100%; animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
     .connect-icon { width: 64px; height: 64px; border-radius: 16px; background: var(--purple-light); margin: 0 auto 24px; display: flex; align-items: center; justify-content: center; }
     .connect-icon svg { width: 28px; height: 28px; color: var(--purple); }
@@ -510,16 +512,18 @@
       .topbar-site { font-size: 11px; padding: 5px 8px; max-width: 130px; min-width: 0; }
       .topbar-site span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
       .source-switch { display: none !important; }
+      .btn-connect { font-size: 11px; padding: 6px 10px; }
       #source-switch-topbar {
         display: none;
-      }
-      #source-switch-topbar.visible {
-        display: flex;
         background: var(--light);
         border-radius: 10px;
         padding: 3px;
         border: 1px solid var(--border);
         gap: 2px;
+        align-items: center;
+      }
+      #source-switch-topbar.visible {
+        display: flex;
       }
       #source-switch-topbar .source-btn {
         font-size: 11px;
@@ -1094,7 +1098,7 @@
         Connexions
       </button>
       <!-- Switch GSC/Analytics dans la topbar mobile — visible uniquement sur mobile après connexion -->
-      <div id="source-switch-topbar" style="display:none;">
+      <div id="source-switch-topbar">
         <button class="source-btn active" id="btn-gsc-topbar" onclick="switchSource('gsc')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           GSC
@@ -1573,7 +1577,7 @@
 
   // ── SHOW CONNECT SCREEN ──
   function showConnectScreen() {
-    document.getElementById('connect-screen').style.display = 'flex';
+    document.getElementById('connect-screen').classList.remove('hidden');
     document.getElementById('dashboard-screen').style.display = 'none';
     // Onboarding première visite
     if (!localStorage.getItem('rankup-onboarded')) {
@@ -1712,14 +1716,22 @@
     showFiltersBtn();
     applyFreemiumRestrictions();
     applyFreemiumToButtons();
-    document.getElementById('connect-screen').style.display = 'none';
+    // Masquer tous les écrans et afficher le dashboard
+    document.querySelectorAll('.content').forEach(el => el.style.display = 'none');
     document.getElementById('dashboard-screen').style.display = 'block';
+    // Activer dashboard dans la nav
+    document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+    const firstNavBtn = document.querySelector('.bottom-nav-item:first-child');
+    if (firstNavBtn) firstNavBtn.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const firstSideBtn = document.querySelector('.nav-item:first-child');
+    if (firstSideBtn) firstSideBtn.classList.add('active');
     document.getElementById('topbar-site').style.display = 'flex';
     document.getElementById('source-switch').style.display = 'flex';
     document.getElementById('source-switch-mobile').style.display = 'flex';
     document.getElementById('period-picker').style.display = 'flex';
     document.getElementById('last-update').style.display = 'flex';
-    document.getElementById('btn-connect-top').style.display = 'none';
+    document.getElementById('btn-connect-top').classList.add('hidden');
     const sstb1 = document.getElementById('source-switch-topbar');
     if (sstb1) sstb1.classList.add('visible');
 
@@ -1730,6 +1742,10 @@
     renderGSCTable();
     renderOppMini();
     updateKPIs();
+    // Forcer la suppression des skeletons restants
+    document.querySelectorAll('.skeleton-kpi').forEach(el => {
+      if (el.parentElement) el.parentElement.textContent = el.parentElement.textContent || '—';
+    });
     setTimeout(buildPositionChart, 100);
 
     // Lancer l'analyse IA en arrière-plan
@@ -1765,14 +1781,16 @@
     state.connected = true;
     state.siteUrl = 'https://demo-studio.fr';
     document.getElementById('current-site').textContent = 'demo-studio.fr';
-    document.getElementById('connect-screen').style.display = 'none';
+    document.getElementById('connect-screen').classList.add('hidden');
     document.getElementById('dashboard-screen').style.display = 'block';
     document.getElementById('topbar-site').style.display = 'flex';
     document.getElementById('source-switch').style.display = 'flex';
     document.getElementById('source-switch-mobile').style.display = 'flex';
     document.getElementById('period-picker').style.display = 'flex';
     document.getElementById('last-update').style.display = 'flex';
-    document.getElementById('btn-connect-top').style.display = 'none';
+    document.getElementById('btn-connect-top').classList.add('hidden');
+    const sstbDemo = document.getElementById('source-switch-topbar');
+    if (sstbDemo) sstbDemo.classList.add('visible');
     renderGSCTable();
     renderOppMini();
     updateKPIs();
@@ -2552,7 +2570,10 @@
     } else {
       stopRealtimeRefresh();
     }
-    if (name === 'dashboard') setTimeout(buildPositionChart, 50);
+    if (name === 'dashboard') {
+      if (state.connected) { renderGSCTable(); renderOppMini(); updateKPIs(); }
+      setTimeout(buildPositionChart, 50);
+    }
     if (name === 'keywords') renderKwFull();
     if (name === 'opportunities') renderOppFull();
     if (name === 'settings') updateSettingsPage();

@@ -166,6 +166,7 @@
     .btn-connect:hover { background: var(--purple-mid); color: var(--purple-dark); }
     html.dark .btn-connect { background: var(--purple-light); color: var(--purple-mid); border-color: var(--purple-mid); }
     .last-update { font-size: 12px; color: var(--mid); display: flex; align-items: center; gap: 5px; }
+    .last-update-bar { display: none; }
     .update-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
@@ -269,7 +270,7 @@
     .ctr-badge.ok { background: var(--light); color: var(--mid); }
 
     /* ══ OPPORTUNITIES ══ */
-    .opp-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--white); transition: all 0.15s; cursor: pointer; }
+    .opp-item { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--white); transition: all 0.15s; cursor: pointer; }
     .opp-item:hover { border-color: var(--purple-mid); box-shadow: 0 2px 12px rgba(124,58,237,0.08); }
     .opp-pos { font-family: 'Butler', Georgia, serif; font-size: 22px; color: var(--purple); font-weight: 700; min-width: 36px; text-align: center; }
     .opp-body { flex: 1; }
@@ -278,6 +279,8 @@
     .opp-potential { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 8px; background: var(--purple-light); color: var(--purple); white-space: nowrap; }
     .opp-bar-wrap { width: 80px; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
     .opp-bar { height: 100%; border-radius: 4px; background: var(--purple); }
+    .opp-url { font-size: 11px; color: var(--mid); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+    .opp-bottom { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 
     /* ══ ANALYTICS VIEW ══ */
     .analytics-header {
@@ -504,16 +507,30 @@
 
       .sidebar { display: none; }
       .main { margin-left: 0; padding-top: 56px; padding-bottom: 72px; max-width: 100vw; overflow-x: hidden; }
+      .add-kw-form { gap: 8px; }
+      .add-kw-input { min-width: 0; flex: 1; font-size: 12px; padding: 10px 10px; }
+      .btn-add-kw { flex-shrink: 0; white-space: nowrap; padding: 10px 14px; font-size: 12px; }
       .bottom-nav { display: flex; }
 
       /* Topbar mobile — compacte et qui ne déborde pas */
       .topbar { padding: 0 12px; height: 56px; min-width: 0; position: fixed; top: 0; left: 0; right: 0; z-index: 50; }
       .topbar-left { gap: 8px; min-width: 0; flex: 1; overflow: hidden; }
-      .topbar-title { font-size: 16px; white-space: nowrap; }
+      .topbar-title { display: none; }
+      .topbar-logo-mobile { display: flex; align-items: center; gap: 8px; }
+      .last-update-bar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        color: var(--mid);
+        margin-bottom: 12px;
+        padding: 6px 0 0;
+      }
       .topbar-right { gap: 6px; flex-shrink: 0; }
       .topbar-site { font-size: 11px; padding: 5px 8px; max-width: 130px; min-width: 0; }
       .topbar-site span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
       .source-switch { display: none !important; }
+      #last-update { display: none !important; }
       .btn-connect { font-size: 11px; padding: 6px 10px; }
       #source-switch-topbar {
         display: none;
@@ -540,7 +557,15 @@
       #period-picker { display: none !important; }
       .btn-filters-toggle { display: flex !important; }
       .topbar-title { display: none; }
-      .topbar-logo-mobile { display: flex; align-items: center; gap: 8px; }
+      .last-update-bar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        color: var(--mid);
+        margin-bottom: 12px;
+        padding: 6px 0 0;
+      }
       /* Bottom nav toujours visible quand dashboard affiché */
       .bottom-nav { display: flex; z-index: 100; }
 
@@ -562,6 +587,8 @@
       table { width: 100%; }
       .kw-table { min-width: 480px; }
       .pages-table { min-width: 520px; }
+      #settings-grid { grid-template-columns: 1fr !important; max-width: 100% !important; }
+      #settings-account { max-width: 100% !important; }
 
       /* KPI cards */
       .kpi-card { padding: 14px 16px; }
@@ -581,7 +608,7 @@
       .toast { max-width: 100%; }
 
       /* Opp items */
-      .opp-item { flex-wrap: wrap; }
+      .opp-item { }
 
       /* Loader */
       #global-loader > div { min-width: auto; width: 90vw; padding: 24px; }
@@ -1417,7 +1444,7 @@
 
   <!-- ══ SETTINGS SCREEN ══ -->
   <div id="settings-screen" class="content" style="display:none;">
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:700px;">
+    <div id="settings-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:700px;">
 
       <!-- GSC Card -->
       <div class="connect-card" style="margin:0; padding:32px; text-align:left;">
@@ -1722,6 +1749,7 @@
     document.getElementById('source-switch').style.display = 'flex';
     document.getElementById('period-picker').style.display = 'flex';
     document.getElementById('last-update').style.display = 'flex';
+    const lub = document.getElementById('last-update-bar'); if (lub) lub.style.display = 'flex';
     document.getElementById('btn-connect-top').classList.add('hidden');
     const sstb1 = document.getElementById('source-switch-topbar');
     if (sstb1) sstb1.classList.add('visible');
@@ -1778,6 +1806,7 @@
     document.getElementById('source-switch').style.display = 'flex';
     document.getElementById('period-picker').style.display = 'flex';
     document.getElementById('last-update').style.display = 'flex';
+    const lub = document.getElementById('last-update-bar'); if (lub) lub.style.display = 'flex';
     document.getElementById('btn-connect-top').classList.add('hidden');
     const sstbDemo = document.getElementById('source-switch-topbar');
     if (sstbDemo) sstbDemo.classList.add('visible');
@@ -2404,14 +2433,18 @@
     el.innerHTML = opps.map(k => {
       const score = Math.round(((20 - k.position) / 12) * 100);
       const ctrSignal = k.ctr < 4 ? ' · ⚠️ CTR faible' : '';
+      const pageDisplay = k.page ? `<div class="opp-url">${k.page}</div>` : '';
       return `<div class="opp-item">
         <div class="opp-pos">${k.position}</div>
         <div class="opp-body">
           <div class="opp-keyword">${k.keyword}</div>
-          <div class="opp-meta">${k.page || ''} · ${k.clicks} clics · ${k.impressions} impressions${ctrSignal}</div>
+          <div class="opp-meta">${k.clicks} clics · ${k.impressions} impressions${ctrSignal}</div>
+          ${pageDisplay}
+          <div class="opp-bottom">
+            <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%"></div></div>
+            <span class="opp-potential">+${k.potential || Math.round((score/100)*8)} pos.</span>
+          </div>
         </div>
-        <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%"></div></div>
-        <span class="opp-potential">+${k.potential || Math.round((score/100)*8)} pos.</span>
       </div>`;
     }).join('');
   }

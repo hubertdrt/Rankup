@@ -561,6 +561,7 @@
       .kw-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
       table { width: 100%; }
       .kw-table { min-width: 480px; }
+      .pages-table { min-width: 520px; }
 
       /* KPI cards */
       .kpi-card { padding: 14px 16px; }
@@ -1268,6 +1269,7 @@
         <div class="card-header">
           <div><div class="card-title">Comportement par page</div><div class="card-subtitle">Trafic organique uniquement · Données Analytics</div></div>
         </div>
+        <div class="kw-table-wrap">
         <table class="pages-table">
           <thead><tr>
             <th>Page</th><th>Sessions</th><th>Taux de rebond</th>
@@ -1275,6 +1277,7 @@
           </tr></thead>
           <tbody id="pages-analytics-table"><tr><td colspan="6"><div class="skeleton skeleton-row" style="width:100%;margin:8px 0;"></div><div class="skeleton skeleton-row" style="width:85%;"></div><div class="skeleton skeleton-row" style="width:90%;"></div><div class="skeleton skeleton-row" style="width:75%;"></div><div class="skeleton skeleton-row" style="width:88%;"></div></td></tr></tbody>
         </table>
+        </div><!-- /kw-table-wrap -->
       </div>
 
       <!-- CTR vs Bounce correlation -->
@@ -2127,10 +2130,7 @@
     if (btnGscM) btnGscM.classList.toggle('active', source === 'gsc');
     if (btnAnalyticsM) btnAnalyticsM.classList.toggle('active', source === 'analytics');
     // Sync boutons topbar
-    const btnGscT = document.getElementById('btn-gsc-topbar');
-    const btnAnalyticsT = document.getElementById('btn-analytics-topbar');
-    if (btnGscT) btnGscT.classList.toggle('active', source === 'gsc');
-    if (btnAnalyticsT) btnAnalyticsT.classList.toggle('active', source === 'analytics');
+    syncTopbarSwitch('dashboard', source);
     document.getElementById('analytics-view').style.display = source === 'analytics' ? 'block' : 'none';
     document.getElementById('btn-gsc').classList.toggle('active', source === 'gsc');
     document.getElementById('btn-analytics').classList.toggle('active', source === 'analytics');
@@ -2491,6 +2491,35 @@
     document.title = site ? `${sectionName} — ${site} · Rankup` : `Rankup — Suivi SEO & Analytics`;
   }
 
+  function syncTopbarSwitch(name, source) {
+    const tb = document.getElementById('source-switch-topbar');
+    if (!tb) return;
+    const gscT = document.getElementById('btn-gsc-topbar');
+    const gaT  = document.getElementById('btn-analytics-topbar');
+    if (!gscT || !gaT) return;
+    // Reset
+    gscT.classList.remove('active','both-active','disabled');
+    gaT.classList.remove('active','both-active','disabled');
+    gscT.onclick  = null;
+    gaT.onclick   = null;
+    if (name === 'dashboard') {
+      const src = source || state.source;
+      gscT.classList.toggle('active', src === 'gsc');
+      gaT.classList.toggle('active',  src === 'analytics');
+      gscT.onclick = () => switchSource('gsc');
+      gaT.onclick  = () => switchSource('analytics');
+    } else if (name === 'keywords' || name === 'opportunities') {
+      gscT.classList.add('active');
+      gaT.classList.add('disabled');
+    } else if (name === 'ai') {
+      gscT.classList.add('both-active');
+      gaT.classList.add('both-active');
+    } else if (name === 'realtime') {
+      gaT.classList.add('active');
+      gscT.classList.add('disabled');
+    }
+  }
+
   function showSection(name) {
     ['connect','dashboard','keywords','opportunities','ai','realtime','settings'].forEach(s => {
       const el = document.getElementById(s+'-screen');
@@ -2543,6 +2572,8 @@
         btnGsc.onclick = null;
         btnAnalytics.onclick = null;
       }
+      // Sync switch topbar mobile
+      syncTopbarSwitch(name);
     } else {
       sw.style.display = 'none';
     }

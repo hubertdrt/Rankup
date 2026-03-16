@@ -1740,8 +1740,11 @@
   async function connectDashboard() {
     state.connected = true;
 
+    // Vérifier si on a du cache frais — si oui, pas de loader
+    const hasCachedData = lsGet(`gsc_kw_${localStorage.getItem('rankup-site') || ''}_${28}`, LS_TTL.gsc) !== null;
+
     // 1. Sites GSC
-    showLoader('Récupération de vos sites Search Console...');
+    if (!hasCachedData) showLoader('Récupération de vos sites Search Console...');
     try {
       const res = await fetchWithTimeout(`${BACKEND}/gsc/sites?session=${state.session}`);
       const data = await res.json();
@@ -1767,7 +1770,7 @@
     }
 
     // 2. Mots-clés GSC
-    updateLoader('Chargement des positions...', 30);
+    if (!hasCachedData) updateLoader('Chargement des positions...', 30);
     try {
       const gscCacheKey = `gsc_kw_${state.siteUrl}_${state.period}`;
       let gscData = lsGet(gscCacheKey, LS_TTL.gsc);
@@ -1796,7 +1799,7 @@
     }
 
     // 3. Opportunités
-    updateLoader('Détection des opportunités...', 50);
+    if (!hasCachedData) updateLoader('Détection des opportunités...', 50);
     try {
       const oppCacheKey = `gsc_opp_${state.siteUrl}_${state.period}`;
       let oppData = lsGet(oppCacheKey, LS_TTL.gsc);
@@ -1814,7 +1817,7 @@
     }
 
     // 4. Propriétés GA4
-    updateLoader('Connexion à Google Analytics...', 70);
+    if (!hasCachedData) updateLoader('Connexion à Google Analytics...', 70);
     try {
       const res = await fetchWithTimeout(`${BACKEND}/ga4/properties?session=${state.session}`);
       const data = await res.json();
@@ -1827,7 +1830,7 @@
 
     // 5. Données GA4
     if (state.ga4PropertyId) {
-      updateLoader('Chargement des données Analytics...', 85);
+      if (!hasCachedData) updateLoader('Chargement des données Analytics...', 85);
       await fetchGA4Behavior(state.period);
     }
 

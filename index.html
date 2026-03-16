@@ -2998,7 +2998,7 @@
   }
   async function upgradePlan() {
     closePricingModal();
-    if (!state.session) { showToast('Connectez-vous d'abord.', 'error'); return; }
+    if (!state.session) { showToast("Connectez-vous d'abord.", 'error'); return; }
     showToast('Redirection vers le paiement...', 'info', 3000);
     try {
       const res = await fetchWithTimeout(`${BACKEND}/stripe/create-checkout`, {
@@ -3027,7 +3027,7 @@
       if (data.url) window.location.href = data.url;
       else showToast('Aucun abonnement trouvé.', 'error');
     } catch(e) {
-      showToast('Impossible d'ouvrir le portail.', 'error');
+      showToast("Impossible d'ouvrir le portail.", 'error');
     }
   }
 

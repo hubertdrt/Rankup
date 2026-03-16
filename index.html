@@ -2952,7 +2952,19 @@
 
       if (accEl) accEl.style.display = 'block';
       if (emailEl) emailEl.textContent = state.email || '—';
-    } else {
+
+      // Plan
+      const badgeEl = document.getElementById('settings-plan-badge');
+      const actionEl = document.getElementById('settings-plan-action');
+      if (badgeEl) {
+        if (state.plan === 'premium') {
+          badgeEl.innerHTML = '<span style="font-size:12px;font-weight:700;background:linear-gradient(135deg,#7C3AED,#A855F7);color:white;padding:4px 14px;border-radius:20px;">✦ Premium</span>';
+          if (actionEl) actionEl.innerHTML = '<button onclick="manageSubscription()" style="font-family:\'Poppins\',sans-serif;font-size:12px;font-weight:500;color:var(--purple);background:var(--purple-light);border:1.5px solid var(--purple-mid);border-radius:8px;padding:7px 14px;cursor:pointer;">Gérer mon abonnement</button>';
+        } else {
+          badgeEl.innerHTML = '<span style="font-size:12px;font-weight:600;background:var(--light);color:var(--mid);padding:4px 14px;border-radius:20px;border:1px solid var(--border);">Gratuit</span>';
+          if (actionEl) actionEl.innerHTML = '<button onclick="upgradePlan()" style="font-family:\'Poppins\',sans-serif;font-size:12px;font-weight:600;color:white;background:linear-gradient(135deg,#7C3AED,#A855F7);border:none;border-radius:8px;padding:8px 18px;cursor:pointer;">✦ Passer Premium — 29€/mois</button>';
+        }
+      }
       // Non connecté
       if (gscEl) gscEl.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
@@ -2973,19 +2985,6 @@
   }
 
   // ── PRICING MODAL ──
-
-    // Plan
-    const badgeEl = document.getElementById('settings-plan-badge');
-    const actionEl = document.getElementById('settings-plan-action');
-    if (badgeEl) {
-      if (state.plan === 'premium') {
-        badgeEl.innerHTML = '<span style="font-size:12px;font-weight:700;background:linear-gradient(135deg,#7C3AED,#A855F7);color:white;padding:4px 14px;border-radius:20px;">✦ Premium</span>';
-        if (actionEl) actionEl.innerHTML = '<button onclick="manageSubscription()" style="font-family:'Poppins',sans-serif;font-size:12px;font-weight:500;color:var(--purple);background:var(--purple-light);border:1.5px solid var(--purple-mid);border-radius:8px;padding:7px 14px;cursor:pointer;">Gérer mon abonnement</button>';
-      } else {
-        badgeEl.innerHTML = '<span style="font-size:12px;font-weight:600;background:var(--light);color:var(--mid);padding:4px 14px;border-radius:20px;border:1px solid var(--border);">Gratuit</span>';
-        if (actionEl) actionEl.innerHTML = '<button onclick="upgradePlan()" style="font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;color:white;background:linear-gradient(135deg,#7C3AED,#A855F7);border:none;border-radius:8px;padding:8px 18px;cursor:pointer;">✦ Passer Premium — 29€/mois</button>';
-      }
-    }
   function openPricingModal() {
     document.getElementById('pricing-modal').classList.add('open');
     document.body.style.overflow = 'hidden';

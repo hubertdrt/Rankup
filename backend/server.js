@@ -125,12 +125,41 @@ function getOAuthClient() {
   );
 }
 
+// ── Helpers cache Supabase ──
+const CACHE_TTL = {
+  gsc: 60 * 60 * 1000,        // 1h pour GSC
+  ga4: 30 * 60 * 1000,        // 30min pour GA4
+  opportunities: 60 * 60 * 1000,
+};
+
+async function getCache(key) {
+  const { data, error } = await supabase.from('cache').select('data, cached_at').eq('id', key).single();
+  if (error || !data) return null;
+  return data;
+}
+
+async function setCache(key, data) {
+  await supabase.from('cache').upsert({ id: key, data, cached_at: new Date().toISOString() });
+}
+
+function isFresh(cachedAt, ttl) {
+  return Date.now() - new Date(cachedAt).getTime() < ttl;
+}
+
 // ── Nettoyage sessions expirées — toutes les heures ──
 setInterval(async () => {
   const expiry = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { error } = await supabase.from('sessions').delete().lt('last_seen', expiry);
   if (error) console.error('Erreur nettoyage sessions:', error.message);
   else console.log('[cleanup] Sessions expirées supprimées');
+}, 60 * 60 * 1000);
+
+// ── Nettoyage cache expiré — toutes les heures ──
+setInterval(async () => {
+  const expiry = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2h
+  const { error } = await supabase.from('cache').delete().lt('cached_at', expiry);
+  if (error) console.error('Erreur nettoyage cache:', error.message);
+  else console.log('[cleanup] Cache expiré supprimé');
 }, 60 * 60 * 1000);
 
 // ── Helper : récupérer la session depuis Supabase ──
@@ -253,6 +282,16 @@ app.get('/gsc/sites', async (req, res) => {
 app.post('/gsc/keywords', async (req, res) => {
   const { session, siteUrl, startDate, endDate, rowLimit = 50, days = 28 } = req.body;
   if (!siteUrl || typeof siteUrl !== 'string') return res.status(400).json({ error: 'siteUrl invalide' });
+  const sess = await getSession(session);
+  if (!sess) return res.status(401).json({ error: 'Non connecté' });
+
+  // Cache
+  const cacheKey = `gsc_keywords_${sess.email}_${siteUrl}_${days}`;
+  const cached = await getCache(cacheKey);
+  if (cached && isFresh(cached.cached_at, CACHE_TTL.gsc)) {
+    return res.json({ ...cached.data, fromCache: true });
+  }
+
   const client = await getClientFromSession(session);
   if (!client) return res.status(401).json({ error: 'Non connecté' });
   const effectiveDays = days === 1 ? 3 : days === 3 ? 5 : days;
@@ -273,7 +312,9 @@ app.post('/gsc/keywords', async (req, res) => {
       (prevData.rows || []).forEach(row => { prevMap[row.keys[0]] = parseFloat(row.position.toFixed(1)); });
     } catch(e) {}
     const keywordsWithDelta = keywords.map(k => { const prevPos = prevMap[k.keyword] || null; return { ...k, prevPosition: prevPos, delta: prevPos !== null ? parseFloat((prevPos - k.position).toFixed(1)) : 0 }; });
-    res.json({ keywords: keywordsWithDelta, totals, period: { start, end } });
+    const result = { keywords: keywordsWithDelta, totals, period: { start, end } };
+    await setCache(cacheKey, result);
+    res.json(result);
   } catch (err) {
     console.error('Erreur GSC keywords:', err.message);
     res.status(500).json({ error: err.message });
@@ -301,6 +342,16 @@ app.post('/gsc/keyword-trend', async (req, res) => {
 // GSC — Opportunities
 app.post('/gsc/opportunities', async (req, res) => {
   const { session, siteUrl, days = 28 } = req.body;
+  const sess = await getSession(session);
+  if (!sess) return res.status(401).json({ error: 'Non connecté' });
+
+  // Cache
+  const cacheKey = `gsc_opp_${sess.email}_${siteUrl}_${days}`;
+  const cached = await getCache(cacheKey);
+  if (cached && isFresh(cached.cached_at, CACHE_TTL.opportunities)) {
+    return res.json({ ...cached.data, fromCache: true });
+  }
+
   const client = await getClientFromSession(session);
   if (!client) return res.status(401).json({ error: 'Non connecté' });
   const end = new Date().toISOString().split('T')[0];
@@ -309,6 +360,7 @@ app.post('/gsc/opportunities', async (req, res) => {
     const sc = google.webmasters({ version: 'v3', auth: client });
     const { data } = await sc.searchanalytics.query({ siteUrl, requestBody: { startDate: start, endDate: end, searchType: 'web', dimensions: ['query', 'page'], rowLimit: 200 } });
     const opportunities = (data.rows || []).filter(row => row.position >= 8 && row.position <= 20).map(row => ({ keyword: row.keys[0], page: row.keys[1], position: parseFloat(row.position.toFixed(1)), clicks: row.clicks, impressions: row.impressions, ctr: parseFloat((row.ctr * 100).toFixed(1)), potential: Math.round(((20 - row.position) / 12) * 8) })).sort((a, b) => b.impressions - a.impressions);
+    await setCache(cacheKey, { opportunities });
     res.json({ opportunities });
   } catch (err) {
     console.error('Erreur GSC opportunities:', err.message);
@@ -343,6 +395,16 @@ app.get('/ga4/properties', async (req, res) => {
 // GA4 — Behavior
 app.post('/ga4/behavior', async (req, res) => {
   const { session, propertyId, days = 28 } = req.body;
+  const sess = await getSession(session);
+  if (!sess) return res.status(401).json({ error: 'Non connecté' });
+
+  // Cache
+  const cacheKey = `ga4_behavior_${sess.email}_${propertyId}_${days}`;
+  const cached = await getCache(cacheKey);
+  if (cached && isFresh(cached.cached_at, CACHE_TTL.ga4)) {
+    return res.json({ ...cached.data, fromCache: true });
+  }
+
   const client = await getClientFromSession(session);
   if (!client) return res.status(401).json({ error: 'Non connecté' });
   try {
@@ -358,7 +420,9 @@ app.post('/ga4/behavior', async (req, res) => {
       const bounceRate = sessions > 0 ? parseFloat(((1 - engagedSessions / sessions) * 100).toFixed(1)) : 0;
       if (!pageMap[page] || sessions > pageMap[page].sessions) pageMap[page] = { page, sessions, bounceRate, avgDuration, pagesPerSession };
     });
-    res.json({ pages: Object.values(pageMap).sort((a, b) => b.sessions - a.sessions).slice(0, 50) });
+    const pages = Object.values(pageMap).sort((a, b) => b.sessions - a.sessions).slice(0, 50);
+    await setCache(cacheKey, { pages });
+    res.json({ pages });
   } catch (err) {
     console.error('Erreur GA4 behavior:', err.message);
     res.status(500).json({ error: err.message });
@@ -385,6 +449,16 @@ app.post('/ai/analyze', async (req, res) => {
 // GA4 — Geo + Devices
 app.post('/ga4/geo-devices', async (req, res) => {
   const { session, propertyId, days = 28 } = req.body;
+  const sess = await getSession(session);
+  if (!sess) return res.status(401).json({ error: 'Non connecté' });
+
+  // Cache
+  const cacheKey = `ga4_geo_${sess.email}_${propertyId}_${days}`;
+  const cached = await getCache(cacheKey);
+  if (cached && isFresh(cached.cached_at, CACHE_TTL.ga4)) {
+    return res.json({ ...cached.data, fromCache: true });
+  }
+
   const client = await getClientFromSession(session);
   if (!client) return res.status(401).json({ error: 'Non connecté' });
   try {
@@ -393,7 +467,12 @@ app.post('/ga4/geo-devices', async (req, res) => {
       analyticsData.properties.runReport({ property: `properties/${propertyId}`, requestBody: { dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'today' }], dimensions: [{ name: 'country' }], metrics: [{ name: 'sessions' }], dimensionFilter: { filter: { fieldName: 'sessionDefaultChannelGroup', stringFilter: { matchType: 'CONTAINS', value: 'Organic' } } }, orderBys: [{ metric: { metricName: 'sessions' }, desc: true }], limit: 8 } }),
       analyticsData.properties.runReport({ property: `properties/${propertyId}`, requestBody: { dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'today' }], dimensions: [{ name: 'deviceCategory' }], metrics: [{ name: 'sessions' }], dimensionFilter: { filter: { fieldName: 'sessionDefaultChannelGroup', stringFilter: { matchType: 'CONTAINS', value: 'Organic' } } }, orderBys: [{ metric: { metricName: 'sessions' }, desc: true }], limit: 5 } }),
     ]);
-    res.json({ countries: (countryData.rows || []).map(r => ({ country: r.dimensionValues[0].value, sessions: parseInt(r.metricValues[0].value) })), devices: (deviceData.rows || []).map(r => ({ device: r.dimensionValues[0].value, sessions: parseInt(r.metricValues[0].value) })) });
+    const geoResult = {
+      countries: (countryData.rows || []).map(r => ({ country: r.dimensionValues[0].value, sessions: parseInt(r.metricValues[0].value) })),
+      devices: (deviceData.rows || []).map(r => ({ device: r.dimensionValues[0].value, sessions: parseInt(r.metricValues[0].value) })),
+    };
+    await setCache(cacheKey, geoResult);
+    res.json(geoResult);
   } catch (err) {
     console.error('Erreur GA4 geo-devices:', err.message);
     res.status(500).json({ error: err.message });
@@ -471,7 +550,7 @@ app.post('/stripe/portal', async (req, res) => {
 });
 
 // Sanity check
-app.get('/', (req, res) => res.json({ status: 'Rankup backend OK', version: '2.2.0-stripe' }));
+app.get('/', (req, res) => res.json({ status: 'Rankup backend OK', version: '2.3.0-cache' }));
 
 // ── 404 ──
 app.use((req, res) => res.status(404).json({ error: 'Route introuvable' }));

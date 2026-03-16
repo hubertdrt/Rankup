@@ -1068,7 +1068,7 @@
   </div>
 
   <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px;">
-    <a href="landing" style="font-size:11px;color:var(--mid);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;" onmouseover="this.style.color='var(--purple)'" onmouseout="this.style.color='var(--mid)'">
+    <a href="landing.html" style="font-size:11px;color:var(--mid);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;" onmouseover="this.style.color='var(--purple)'" onmouseout="this.style.color='var(--mid)'">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       À propos de Rankup
     </a>
@@ -1391,6 +1391,7 @@
         <div><div class="card-title">Mots-clés suivis</div><div class="card-subtitle" id="kw-subtitle">10/10 actifs — Plan gratuit</div></div>
         <button class="card-action" onclick="exportCSV('keywords')">↓ Export CSV</button>
       </div>
+      <div class="kw-table-wrap">
       <table class="kw-table">
         <thead><tr>
           <th>Mot-clé</th>
@@ -1402,6 +1403,7 @@
         </tr></thead>
         <tbody id="kw-full-table"></tbody>
       </table>
+      </div>
     </div>
   </div>
 

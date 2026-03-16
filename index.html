@@ -1559,6 +1559,26 @@
   // ── STATE ──
   const BACKEND = 'https://api.rankbase.fr';
 
+  // ── Cache localStorage ──
+  const LS_TTL = {
+    gsc: 60 * 60 * 1000,       // 1h
+    ga4: 30 * 60 * 1000,       // 30min
+  };
+
+  function lsGet(key, ttl) {
+    try {
+      const raw = localStorage.getItem('rankup_cache_' + key);
+      if (!raw) return null;
+      const { data, ts } = JSON.parse(raw);
+      if (Date.now() - ts > ttl) { localStorage.removeItem('rankup_cache_' + key); return null; }
+      return data;
+    } catch(e) { return null; }
+  }
+
+  function lsSet(key, data) {
+    try { localStorage.setItem('rankup_cache_' + key, JSON.stringify({ data, ts: Date.now() })); } catch(e) {}
+  }
+
   const sortState = {
     gsc: { col: 'pos', dir: 'asc' },
     ga4: { col: 'sessions', dir: 'desc' },
@@ -1749,12 +1769,17 @@
     // 2. Mots-clés GSC
     updateLoader('Chargement des positions...', 30);
     try {
-      const res = await fetchWithTimeout(`${BACKEND}/gsc/keywords`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session: state.session, siteUrl: state.siteUrl, rowLimit: 50, days: state.period })
-      });
-      const data = await res.json();
-      state.keywords = (data.keywords || []).map(k => ({
+      const gscCacheKey = `gsc_kw_${state.siteUrl}_${state.period}`;
+      let gscData = lsGet(gscCacheKey, LS_TTL.gsc);
+      if (!gscData) {
+        const res = await fetchWithTimeout(`${BACKEND}/gsc/keywords`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: state.session, siteUrl: state.siteUrl, rowLimit: 50, days: state.period })
+        });
+        gscData = await res.json();
+        lsSet(gscCacheKey, gscData);
+      }
+      state.keywords = (gscData.keywords || []).map(k => ({
         kw: k.keyword, url: '',
         pos: k.position,
         prev: k.prevPosition || k.position,
@@ -1763,9 +1788,8 @@
         clicks: k.clicks, impressions: k.impressions, ctr: k.ctr,
         bounce: 0, time: '—', conv: 0,
       }));
-      // Alertes de chute
       checkPositionAlerts(state.keywords);
-      state.totals = data.totals || null;
+      state.totals = gscData.totals || null;
     } catch(e) {
       showToast('Données GSC partielles — positions non chargées.', 'warning');
       state.keywords = [];
@@ -1774,12 +1798,17 @@
     // 3. Opportunités
     updateLoader('Détection des opportunités...', 50);
     try {
-      const res = await fetchWithTimeout(`${BACKEND}/gsc/opportunities`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session: state.session, siteUrl: state.siteUrl, days: state.period })
-      });
-      const data = await res.json();
-      state.opportunities = data.opportunities || [];
+      const oppCacheKey = `gsc_opp_${state.siteUrl}_${state.period}`;
+      let oppData = lsGet(oppCacheKey, LS_TTL.gsc);
+      if (!oppData) {
+        const res = await fetchWithTimeout(`${BACKEND}/gsc/opportunities`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: state.session, siteUrl: state.siteUrl, days: state.period })
+        });
+        oppData = await res.json();
+        lsSet(oppCacheKey, oppData);
+      }
+      state.opportunities = oppData.opportunities || [];
     } catch(e) {
       state.opportunities = [];
     }
@@ -1979,12 +2008,17 @@
   async function fetchGA4Behavior(days = 28) {
     if (!state.ga4PropertyId) return;
     try {
-      const res = await fetch(`${BACKEND}/ga4/behavior`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session: state.session, propertyId: state.ga4PropertyId, days })
-      });
-      const data = await res.json();
+      const ga4CacheKey = `ga4_behavior_${state.ga4PropertyId}_${days}`;
+      let data = lsGet(ga4CacheKey, LS_TTL.ga4);
+      if (!data) {
+        const res = await fetch(`${BACKEND}/ga4/behavior`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: state.session, propertyId: state.ga4PropertyId, days })
+        });
+        data = await res.json();
+        lsSet(ga4CacheKey, data);
+      }
       state.ga4Pages = data.pages || [];
 
       // Enrichir les keywords avec les données GA4
@@ -2008,11 +2042,16 @@
   async function fetchGA4GeoDevices(days = 28) {
     if (!state.ga4PropertyId) return;
     try {
-      const res = await fetch(`${BACKEND}/ga4/geo-devices`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session: state.session, propertyId: state.ga4PropertyId, days })
-      });
-      const data = await res.json();
+      const geoCacheKey = `ga4_geo_${state.ga4PropertyId}_${days}`;
+      let data = lsGet(geoCacheKey, LS_TTL.ga4);
+      if (!data) {
+        const res = await fetch(`${BACKEND}/ga4/geo-devices`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: state.session, propertyId: state.ga4PropertyId, days })
+        });
+        data = await res.json();
+        lsSet(geoCacheKey, data);
+      }
 
       // Pays
       const totalSessions = (data.countries || []).reduce((s, c) => s + c.sessions, 0);

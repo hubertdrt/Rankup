@@ -1741,7 +1741,9 @@
     state.connected = true;
 
     // Vérifier si on a du cache frais — si oui, pas de loader
-    const hasCachedData = lsGet(`gsc_kw_${localStorage.getItem('rankup-site') || ''}_${28}`, LS_TTL.gsc) !== null;
+    const _cachedSite = localStorage.getItem('rankup-site') || '';
+    const _cachedPeriod = parseInt(localStorage.getItem('rankup-period') || '28');
+    const hasCachedData = _cachedSite !== '' && lsGet(`gsc_kw_${_cachedSite}_${_cachedPeriod}`, LS_TTL.gsc) !== null;
 
     // 1. Sites GSC
     if (!hasCachedData) showLoader('Récupération de vos sites Search Console...');
@@ -2915,6 +2917,7 @@
   async function setPeriod(days, btn) {
     if (state.period === days) return;
     state.period = days;
+    localStorage.setItem('rankup-period', days);
     document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     if (!state.connected || state.isDemo) {

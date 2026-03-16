@@ -1589,7 +1589,7 @@
   const state = {
     source: 'gsc',
     connected: false,
-    plan: 'free',        // 'free' | 'premium' — sera chargé depuis la BDD
+    plan: 'free',
     session: null,
     email: null,
     siteUrl: null,
@@ -1598,6 +1598,7 @@
     opportunities: [],
     ga4Pages: [],
     isDemo: false,
+    period: parseInt(localStorage.getItem('rankup-period') || '28'),
   };
 
   const FREE_LIMITS = {

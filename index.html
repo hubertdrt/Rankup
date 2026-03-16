@@ -249,6 +249,10 @@
     /* ══ KEYWORDS TABLE ══ */
     .kw-table { width: 100%; border-collapse: collapse; }
     .kw-table th { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--mid); padding: 0 12px 12px; text-align: left; }
+    .kw-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    .kw-table th.sortable:hover { color: var(--purple); }
+    .kw-table th.sort-asc::after { content: ' ↑'; color: var(--purple); }
+    .kw-table th.sort-desc::after { content: ' ↓'; color: var(--purple); }
     .kw-table th:not(:first-child) { text-align: center; }
     .kw-table td { padding: 11px 12px; font-size: 13px; border-top: 1px solid var(--border); }
     .kw-table td:not(:first-child) { text-align: center; }
@@ -277,6 +281,9 @@
     .opp-keyword { font-size: 13px; font-weight: 600; color: var(--dark); }
     .opp-meta { font-size: 11px; color: var(--mid); margin-top: 2px; }
     .opp-potential { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 8px; background: var(--purple-light); color: var(--purple); white-space: nowrap; }
+    .opp-filter-btn { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--white); color: var(--mid); cursor: pointer; transition: all 0.15s; }
+    .opp-filter-btn:hover { border-color: var(--purple-mid); color: var(--purple); }
+    .opp-filter-btn.active { background: var(--purple-light); border-color: var(--purple-mid); color: var(--purple); font-weight: 600; }
     .opp-bar-wrap { width: 80px; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
     .opp-bar { height: 100%; border-radius: 4px; background: var(--purple); }
     .opp-url { font-size: 11px; color: var(--mid); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
@@ -303,6 +310,10 @@
 
     .pages-table { width: 100%; border-collapse: collapse; }
     .pages-table th { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--mid); padding: 0 12px 12px; text-align: left; }
+    .pages-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    .pages-table th.sortable:hover { color: var(--purple); }
+    .pages-table th.sort-asc::after { content: ' ↑'; color: var(--purple); }
+    .pages-table th.sort-desc::after { content: ' ↓'; color: var(--purple); }
     .pages-table td { padding: 12px; font-size: 13px; border-top: 1px solid var(--border); }
     .pages-table tr:hover td { background: var(--light); }
     .bounce-bar { width: 80px; height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
@@ -1243,8 +1254,12 @@
         <div class="kw-table-wrap">
         <table class="kw-table">
           <thead><tr>
-            <th>Mot-clé</th><th>Position</th><th>Évol.</th>
-            <th>Clics</th><th>Impressions</th><th>CTR</th>
+            <th>Mot-clé</th>
+            <th class="sortable" onclick="sortGSC('pos')">Position</th>
+            <th class="sortable" onclick="sortGSC('delta')">Évol.</th>
+            <th class="sortable" onclick="sortGSC('clicks')">Clics</th>
+            <th class="sortable" onclick="sortGSC('impressions')">Impressions</th>
+            <th class="sortable" onclick="sortGSC('ctr')">CTR</th>
           </tr></thead>
           <tbody id="kw-table-gsc"><tr><td colspan="6"><div class="skeleton skeleton-row" style="width:100%;margin:8px 0;"></div><div class="skeleton skeleton-row" style="width:85%;"></div><div class="skeleton skeleton-row" style="width:90%;"></div><div class="skeleton skeleton-row" style="width:75%;"></div><div class="skeleton skeleton-row" style="width:88%;"></div></td></tr></tbody>
         </table>
@@ -1299,8 +1314,12 @@
         <div class="kw-table-wrap">
         <table class="pages-table">
           <thead><tr>
-            <th>Page</th><th>Sessions</th><th>Taux de rebond</th>
-            <th>Tps moyen</th><th>Conversions</th><th>Signal</th>
+            <th>Page</th>
+            <th class="sortable" onclick="sortGA4('sessions')">Sessions</th>
+            <th class="sortable" onclick="sortGA4('bounceRate')">Taux de rebond</th>
+            <th class="sortable" onclick="sortGA4('avgDuration')">Tps moyen</th>
+            <th class="sortable" onclick="sortGA4('conversions')">Conversions</th>
+            <th>Signal</th>
           </tr></thead>
           <tbody id="pages-analytics-table"><tr><td colspan="6"><div class="skeleton skeleton-row" style="width:100%;margin:8px 0;"></div><div class="skeleton skeleton-row" style="width:85%;"></div><div class="skeleton skeleton-row" style="width:90%;"></div><div class="skeleton skeleton-row" style="width:75%;"></div><div class="skeleton skeleton-row" style="width:88%;"></div></td></tr></tbody>
         </table>
@@ -1353,7 +1372,14 @@
         <button class="card-action" onclick="exportCSV('keywords')">↓ Export CSV</button>
       </div>
       <table class="kw-table">
-        <thead><tr><th>Mot-clé</th><th>Position</th><th>Évol.</th><th>CTR</th><th>Rebond</th><th>Statut</th></tr></thead>
+        <thead><tr>
+          <th>Mot-clé</th>
+          <th class="sortable" onclick="sortKw('pos')">Position</th>
+          <th class="sortable" onclick="sortKw('delta')">Évol.</th>
+          <th class="sortable" onclick="sortKw('ctr')">CTR</th>
+          <th class="sortable" onclick="sortKw('bounce')">Rebond</th>
+          <th>Statut</th>
+        </tr></thead>
         <tbody id="kw-full-table"></tbody>
       </table>
     </div>
@@ -1372,6 +1398,15 @@
       <div class="card-header">
         <div><div class="card-title">Opportunités détectées</div><div class="card-subtitle">Triées par potentiel de progression</div></div>
         <button class="card-action" onclick="exportCSV('opportunities')">↓ Export CSV</button>
+      </div>
+      <!-- Filtres opportunités -->
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+        <span style="font-size:12px;color:var(--mid);font-weight:500;">Trier par :</span>
+        <button class="opp-filter-btn active" id="opp-filter-score" onclick="setOppFilter('score')">Score potentiel</button>
+        <button class="opp-filter-btn" id="opp-filter-impressions" onclick="setOppFilter('impressions')">Impressions</button>
+        <button class="opp-filter-btn" id="opp-filter-pos" onclick="setOppFilter('pos')">Position</button>
+        <button class="opp-filter-btn" id="opp-filter-ctr" onclick="setOppFilter('ctr')">CTR faible</button>
+        <button class="opp-filter-btn" id="opp-filter-clicks" onclick="setOppFilter('clicks')">Clics</button>
       </div>
       <div style="display:flex; flex-direction:column; gap:12px;" id="opp-full"></div>
     </div>
@@ -1489,6 +1524,13 @@
 <script>
   // ── STATE ──
   const BACKEND = 'https://api.rankbase.fr';
+
+  const sortState = {
+    gsc: { col: 'pos', dir: 'asc' },
+    ga4: { col: 'sessions', dir: 'desc' },
+    kw:  { col: 'pos', dir: 'asc' },
+    opp: { col: 'score', dir: 'desc' },
+  };
 
   const state = {
     source: 'gsc',
@@ -2363,10 +2405,74 @@
   }
 
   // ── RENDER TABLES ──
+  // ── Tri tableau mots-clés ──
+  function sortKw(col) {
+    if (sortState.kw.col === col) {
+      sortState.kw.dir = sortState.kw.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortState.kw.col = col;
+      sortState.kw.dir = col === 'pos' ? 'asc' : 'desc';
+    }
+    const ths = document.querySelectorAll('#keywords-screen .kw-table thead th.sortable');
+    ths.forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+    const cols = ['pos','delta','ctr','bounce'];
+    const idx = cols.indexOf(col);
+    if (idx >= 0 && ths[idx]) ths[idx].classList.add(sortState.kw.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+    renderKwFull();
+  }
+
+  // ── Filtre opportunités ──
+  function setOppFilter(filter) {
+    sortState.opp.col = filter;
+    document.querySelectorAll('.opp-filter-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('opp-filter-' + filter);
+    if (btn) btn.classList.add('active');
+    renderOppFull();
+  }
+
+  function sortGSC(col) {
+    if (sortState.gsc.col === col) {
+      sortState.gsc.dir = sortState.gsc.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortState.gsc.col = col;
+      sortState.gsc.dir = col === 'pos' ? 'asc' : 'desc';
+    }
+    // Mettre à jour les classes sur les th
+    document.querySelectorAll('#kw-table-gsc').forEach(() => {});
+    const ths = document.querySelectorAll('.kw-table thead th.sortable');
+    ths.forEach(th => { th.classList.remove('sort-asc', 'sort-desc'); });
+    const cols = ['pos','delta','clicks','impressions','ctr'];
+    const idx = cols.indexOf(col);
+    if (idx >= 0 && ths[idx]) ths[idx].classList.add(sortState.gsc.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+    renderGSCTable();
+  }
+
+  function sortGA4(col) {
+    if (sortState.ga4.col === col) {
+      sortState.ga4.dir = sortState.ga4.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortState.ga4.col = col;
+      sortState.ga4.dir = 'desc';
+    }
+    const ths = document.querySelectorAll('.pages-table thead th.sortable');
+    ths.forEach(th => { th.classList.remove('sort-asc', 'sort-desc'); });
+    const cols = ['sessions','bounceRate','avgDuration','conversions'];
+    const idx = cols.indexOf(col);
+    if (idx >= 0 && ths[idx]) ths[idx].classList.add(sortState.ga4.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+    renderAnalyticsTable();
+  }
+
   function renderGSCTable() {
     const tbody = document.getElementById('kw-table-gsc');
     if (!tbody) return;
-    tbody.innerHTML = state.keywords.slice(0,8).map(k => {
+    const { col, dir } = sortState.gsc;
+    const sorted = [...state.keywords].sort((a, b) => {
+      const map = { pos: 'pos', delta: 'delta', clicks: 'clicks', impressions: 'impressions', ctr: 'ctr' };
+      const key = map[col] || 'pos';
+      const av = a[key] ?? 0, bv = b[key] ?? 0;
+      return dir === 'asc' ? av - bv : bv - av;
+    });
+    tbody.innerHTML = sorted.slice(0,8).map(k => {
       const diff = parseFloat((k.prev - k.pos).toFixed(1));
       const cc = diff>0?'up':diff<0?'down':'stable';
       const cl = diff>0?`↑ +${diff}`:diff<0?`↓ ${diff}`:'—';
@@ -2390,7 +2496,12 @@
       page: k.url || k.kw, sessions: Math.round(k.clicks * 1.3),
       bounceRate: k.bounce, avgDuration: 120, conversions: k.conv,
     }));
-    tbody.innerHTML = pages.map(p => {
+    const { col: ga4Col, dir: ga4Dir } = sortState.ga4;
+    const sortedPages = [...pages].sort((a, b) => {
+      const av = a[ga4Col] ?? 0, bv = b[ga4Col] ?? 0;
+      return ga4Dir === 'asc' ? av - bv : bv - av;
+    });
+    tbody.innerHTML = sortedPages.map(p => {
       const bounceColor = p.bounceRate > 70 ? '#EF4444' : p.bounceRate > 55 ? '#F59E0B' : '#22C55E';
       const signal = p.bounceRate > 70 ? '🔴 Contenu à revoir' : p.bounceRate > 55 ? '🟡 Correct' : '🟢 Performant';
       return `<tr>
@@ -2428,8 +2539,24 @@
   function renderOppFull() {
     const el = document.getElementById('opp-full');
     if (!el) return;
-    const opps = state.opportunities;
+    let opps = [...state.opportunities];
     if (!opps.length) { el.innerHTML = '<p style="font-size:13px;color:var(--mid);text-align:center;padding:40px;">Aucune opportunité détectée pour ce site.</p>'; return; }
+    const oppFilter = sortState.opp.col;
+    if (oppFilter === 'score') {
+      opps.sort((a, b) => {
+        const sa = Math.round(((20 - a.position) / 12) * 100);
+        const sb = Math.round(((20 - b.position) / 12) * 100);
+        return sb - sa;
+      });
+    } else if (oppFilter === 'impressions') {
+      opps.sort((a, b) => b.impressions - a.impressions);
+    } else if (oppFilter === 'pos') {
+      opps.sort((a, b) => a.position - b.position);
+    } else if (oppFilter === 'ctr') {
+      opps.sort((a, b) => a.ctr - b.ctr); // CTR faible en premier
+    } else if (oppFilter === 'clicks') {
+      opps.sort((a, b) => b.clicks - a.clicks);
+    }
     el.innerHTML = opps.map(k => {
       const score = Math.round(((20 - k.position) / 12) * 100);
       const ctrSignal = k.ctr < 4 ? ' · ⚠️ CTR faible' : '';
@@ -2452,7 +2579,14 @@
   function renderKwFull() {
     const tbody = document.getElementById('kw-full-table');
     if (!tbody) return;
-    tbody.innerHTML = state.keywords.map(k => {
+    const { col: kwCol, dir: kwDir } = sortState.kw;
+    const kwSorted = [...state.keywords].sort((a, b) => {
+      const map = { pos: 'pos', delta: 'delta', ctr: 'ctr', bounce: 'bounce' };
+      const key = map[kwCol] || 'pos';
+      const av = a[key] ?? 0, bv = b[key] ?? 0;
+      return kwDir === 'asc' ? av - bv : bv - av;
+    });
+    tbody.innerHTML = kwSorted.map(k => {
       const diff = parseFloat((k.prev - k.pos).toFixed(1));
       const cc = diff>0?'up':diff<0?'down':'stable';
       const cl = diff>0?`↑ +${diff}`:diff<0?`↓ ${diff}`:'—';
@@ -3027,7 +3161,8 @@
     // Générer le CSV
     const csvContent = rows.map(row =>
       row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-    ).join('');
+    ).join('
+');
 
     const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

@@ -1669,6 +1669,24 @@
       email = localStorage.getItem('rankup-email');
     }
 
+    // Si on a une session ET du cache frais → afficher le dashboard immédiatement
+    const _site = localStorage.getItem('rankup-site') || '';
+    const _period = parseInt(localStorage.getItem('rankup-period') || '28');
+    const _hasCache = session && _site && lsGet(`gsc_kw_${_site}_${_period}`, LS_TTL.gsc) !== null;
+    if (_hasCache) {
+      // Afficher le dashboard tout de suite avec les données cachées
+      state.session = session;
+      state.email = email || localStorage.getItem('rankup-email') || '';
+      state.siteUrl = _site;
+      state.period = _period;
+      document.getElementById('connect-screen').classList.add('hidden');
+      document.getElementById('dashboard-screen').style.display = 'block';
+      document.getElementById('current-site').textContent = _site.replace(/https?:\/\//, '').replace(/\/$/, '');
+      document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+      const firstNavBtn = document.querySelector('.bottom-nav-item:first-child');
+      if (firstNavBtn) firstNavBtn.classList.add('active');
+    }
+
     if (session) {
       try {
         const res = await fetch(`${BACKEND}/auth/check?session=${session}`);

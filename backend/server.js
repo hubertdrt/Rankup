@@ -11,7 +11,11 @@ const helmet = require('helmet');
 const app = express();
 
 // ── Sécurité HTTP headers ──
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+}));
 
 // ── CORS restreint ──
 app.use(cors({ origin: ['https://app.rankbase.fr', 'http://localhost:5500', 'http://localhost:3000'] }));

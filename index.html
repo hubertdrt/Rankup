@@ -1523,8 +1523,10 @@
 
     </div>
 
-    <!-- Compte connecté -->
-    <div id="settings-account" style="display:none; margin-top:24px; max-width:700px;">
+    <!-- Compte + Plan -->
+    <div id="settings-account" style="display:none; margin-top:24px; max-width:700px; display:flex; flex-direction:column; gap:16px;">
+
+      <!-- Compte connecté -->
       <div class="card" style="padding:20px 24px;">
         <div style="display:flex; align-items:center; justify-content:space-between;">
           <div>
@@ -1536,6 +1538,18 @@
           </button>
         </div>
       </div>
+
+      <!-- Plan actuel -->
+      <div class="card" style="padding:20px 24px;" id="settings-plan-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:var(--dark);">Plan actuel</div>
+            <div style="margin-top:6px;" id="settings-plan-badge"></div>
+          </div>
+          <div id="settings-plan-action"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1614,6 +1628,15 @@
       window.history.replaceState({}, '', window.location.pathname);
       loadDemo();
       return;
+    }
+
+    // Retour depuis Stripe
+    if (params.get('upgrade') === 'success') {
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(() => showToast('🎉 Bienvenue dans Rankup Premium !', 'success', 6000), 1500);
+    }
+    if (params.get('upgrade') === 'cancelled') {
+      window.history.replaceState({}, '', window.location.pathname);
     }
 
     let session = params.get('session');
@@ -2950,6 +2973,19 @@
   }
 
   // ── PRICING MODAL ──
+
+    // Plan
+    const badgeEl = document.getElementById('settings-plan-badge');
+    const actionEl = document.getElementById('settings-plan-action');
+    if (badgeEl) {
+      if (state.plan === 'premium') {
+        badgeEl.innerHTML = '<span style="font-size:12px;font-weight:700;background:linear-gradient(135deg,#7C3AED,#A855F7);color:white;padding:4px 14px;border-radius:20px;">✦ Premium</span>';
+        if (actionEl) actionEl.innerHTML = '<button onclick="manageSubscription()" style="font-family:'Poppins',sans-serif;font-size:12px;font-weight:500;color:var(--purple);background:var(--purple-light);border:1.5px solid var(--purple-mid);border-radius:8px;padding:7px 14px;cursor:pointer;">Gérer mon abonnement</button>';
+      } else {
+        badgeEl.innerHTML = '<span style="font-size:12px;font-weight:600;background:var(--light);color:var(--mid);padding:4px 14px;border-radius:20px;border:1px solid var(--border);">Gratuit</span>';
+        if (actionEl) actionEl.innerHTML = '<button onclick="upgradePlan()" style="font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;color:white;background:linear-gradient(135deg,#7C3AED,#A855F7);border:none;border-radius:8px;padding:8px 18px;cursor:pointer;">✦ Passer Premium — 29€/mois</button>';
+      }
+    }
   function openPricingModal() {
     document.getElementById('pricing-modal').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -2961,9 +2997,39 @@
   function closeModalOutside(e) {
     if (e.target === document.getElementById('pricing-modal')) closePricingModal();
   }
-  function upgradePlan() {
+  async function upgradePlan() {
     closePricingModal();
-    showToast('Paiement bientôt disponible — merci de votre intérêt ! 🚀', 'info', 5000);
+    if (!state.session) { showToast('Connectez-vous d'abord.', 'error'); return; }
+    showToast('Redirection vers le paiement...', 'info', 3000);
+    try {
+      const res = await fetchWithTimeout(`${BACKEND}/stripe/create-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: state.session }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else showToast('Erreur lors de la création du paiement.', 'error');
+    } catch(e) {
+      showToast('Impossible de contacter le serveur de paiement.', 'error');
+    }
+  }
+
+  async function manageSubscription() {
+    if (!state.session) return;
+    showToast('Ouverture du portail...', 'info', 2000);
+    try {
+      const res = await fetchWithTimeout(`${BACKEND}/stripe/portal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: state.session }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else showToast('Aucun abonnement trouvé.', 'error');
+    } catch(e) {
+      showToast('Impossible d'ouvrir le portail.', 'error');
+    }
   }
 
   // ── ONBOARDING ──

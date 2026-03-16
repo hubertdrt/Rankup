@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 
@@ -19,6 +20,78 @@ app.use(helmet({
 
 // ── CORS restreint ──
 app.use(cors({ origin: ['https://app.rankbase.fr', 'http://localhost:5500', 'http://localhost:3000'] }));
+
+// ── Webhook Stripe — doit être AVANT express.json (body raw requis) ──
+app.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature invalide:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+
+      // Paiement réussi — abonnement activé
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const email = session.customer_email || session.metadata?.email;
+        const customerId = session.customer;
+        if (email) {
+          await supabase.from('users').upsert({
+            email,
+            plan: 'premium',
+            stripe_customer_id: customerId,
+          }, { onConflict: 'email' });
+          console.log(`[Stripe] Premium activé pour ${email}`);
+        }
+        break;
+      }
+
+      // Abonnement renouvelé
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+        // Retrouver l'email via le customer Stripe
+        const customer = await stripe.customers.retrieve(customerId);
+        if (customer.email) {
+          await supabase.from('users')
+            .update({ plan: 'premium' })
+            .eq('email', customer.email);
+          console.log(`[Stripe] Renouvellement pour ${customer.email}`);
+        }
+        break;
+      }
+
+      // Paiement échoué ou abonnement annulé
+      case 'customer.subscription.deleted':
+      case 'invoice.payment_failed': {
+        const obj = event.data.object;
+        const customerId = obj.customer;
+        const customer = await stripe.customers.retrieve(customerId);
+        if (customer.email) {
+          await supabase.from('users')
+            .update({ plan: 'free' })
+            .eq('email', customer.email);
+          console.log(`[Stripe] Plan free pour ${customer.email}`);
+        }
+        break;
+      }
+
+      default:
+        console.log(`[Stripe] Event ignoré: ${event.type}`);
+    }
+  } catch (err) {
+    console.error('Erreur traitement webhook:', err.message);
+    return res.status(500).send('Erreur webhook');
+  }
+
+  res.json({ received: true });
+});
+
 app.use(express.json({ limit: '1mb' }));
 
 // ── Rate limiting ──
@@ -346,8 +419,59 @@ app.post('/ga4/realtime', async (req, res) => {
   }
 });
 
+// ════════════════════════════════════════
+// STRIPE — Créer une session Checkout
+// ════════════════════════════════════════
+app.post('/stripe/create-checkout', async (req, res) => {
+  const sess = await getSession(req.body.session);
+  if (!sess) return res.status(401).json({ error: 'Non connecté' });
+
+  try {
+    const checkoutSession = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: sess.email,
+      metadata: { email: sess.email },
+      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+      success_url: 'https://app.rankbase.fr/?upgrade=success',
+      cancel_url: 'https://app.rankbase.fr/?upgrade=cancelled',
+    });
+    res.json({ url: checkoutSession.url });
+  } catch (err) {
+    console.error('Erreur Stripe checkout:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ════════════════════════════════════════
+// STRIPE — Portail client (gérer l'abo)
+// ════════════════════════════════════════
+app.post('/stripe/portal', async (req, res) => {
+  const sess = await getSession(req.body.session);
+  if (!sess) return res.status(401).json({ error: 'Non connecté' });
+
+  try {
+    // Retrouver le customer Stripe via l'email
+    const { data: user } = await supabase
+      .from('users').select('stripe_customer_id').eq('email', sess.email).single();
+
+    if (!user?.stripe_customer_id) {
+      return res.status(404).json({ error: 'Aucun abonnement trouvé' });
+    }
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: user.stripe_customer_id,
+      return_url: 'https://app.rankbase.fr/',
+    });
+    res.json({ url: portalSession.url });
+  } catch (err) {
+    console.error('Erreur Stripe portal:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Sanity check
-app.get('/', (req, res) => res.json({ status: 'Rankup backend OK', version: '2.1.0-secure' }));
+app.get('/', (req, res) => res.json({ status: 'Rankup backend OK', version: '2.2.0-stripe' }));
 
 // ── 404 ──
 app.use((req, res) => res.status(404).json({ error: 'Route introuvable' }));

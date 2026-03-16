@@ -100,7 +100,7 @@ app.use(rateLimit({
   standardHeaders: true, legacyHeaders: false,
   message: { error: 'Trop de requêtes, réessayez dans quelques minutes.' },
 }));
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: 'Trop de tentatives de connexion.' } });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: { error: 'Trop de tentatives de connexion.' } });
 const aiLimiter   = rateLimit({ windowMs: 60 * 60 * 1000, max: 10, message: { error: "Limite d\'analyses IA atteinte, réessayez dans une heure." } });
 const apiLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 60, message: { error: 'Trop de requêtes vers les APIs Google.' } });
 app.use('/auth/url', authLimiter);

@@ -45,6 +45,13 @@ const rateLimit = require('express-rate-limit');
 const crypto   = require('crypto');   // module natif Node — pas besoin d'installer
 const { google } = require('googleapis');
 const axios    = require('axios');
+const { createClient } = require('@supabase/supabase-js');
+
+// ── Supabase ─────────────────────────────────────────────────────
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY  // clé service (pas la clé publique anon)
+);
 
 const app = express();
 
@@ -229,29 +236,35 @@ app.post('/auth/logout', (req, res) => {
 });
 
 // ════════════════════════════════════════
-// USER — Profil + plan (stub Supabase)
+// USER — Profil + plan (Supabase)
 // ════════════════════════════════════════
-//
-// TODO Supabase : remplacer le return par :
-//   const { data, error } = await supabase
-//     .from('users')
-//     .select('email, plan')
-//     .eq('email', sessions[session].email)
-//     .single();
-//   if (error || !data) {
-//     await supabase.from('users').upsert({ email, plan: 'free' });
-//     return res.json({ email, plan: 'free' });
-//   }
-//   return res.json({ email: data.email, plan: data.plan });
-//
-app.get('/user/me', (req, res) => {
+app.get('/user/me', async (req, res) => {
   const { session } = req.query;
   if (!session || !sessions[session]) {
     return res.status(401).json({ error: 'Non connecté' });
   }
   const { email } = sessions[session];
-  // ⚠️ STUB : plan hardcodé 'free' — à remplacer par Supabase
-  res.json({ email, plan: 'free' });
+
+  try {
+    // Chercher l'utilisateur dans Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .select('email, plan')
+      .eq('email', email)
+      .single();
+
+    if (error || !data) {
+      // Utilisateur inconnu → créer avec plan free
+      await supabase.from('users').upsert({ email, plan: 'free' });
+      return res.json({ email, plan: 'free' });
+    }
+
+    return res.json({ email: data.email, plan: data.plan });
+  } catch (err) {
+    console.error('[user/me]', err.message);
+    // En cas d'erreur Supabase, on renvoie free par défaut (fail safe)
+    return res.json({ email, plan: 'free' });
+  }
 });
 
 

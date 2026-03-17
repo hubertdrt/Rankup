@@ -2116,23 +2116,27 @@
         return iso.toUpperCase().split('').map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join('');
       }
       const countriesEl = document.getElementById('countries-list');
-      if (countriesEl && data.countries?.length) {
-        countriesEl.innerHTML = data.countries.map(c => {
-          const pct = totalSessions > 0 ? Math.round(c.sessions / totalSessions * 100) : 0;
-          const flag = countryFlag(c.country);
-          return `<div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:18px;width:28px;text-align:center;">${flag}</span>
-            <div style="flex:1;">
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-                <span style="font-size:12px;font-weight:500;color:var(--dark);">${c.country}</span>
-                <span style="font-size:12px;color:var(--mid);">${c.sessions.toLocaleString('fr-FR')} · ${pct}%</span>
+      if (countriesEl) {
+        if (data.countries?.length) {
+          countriesEl.innerHTML = data.countries.map(c => {
+            const pct = totalSessions > 0 ? Math.round(c.sessions / totalSessions * 100) : 0;
+            const flag = countryFlag(c.country);
+            return `<div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:18px;width:28px;text-align:center;">${flag}</span>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                  <span style="font-size:12px;font-weight:500;color:var(--dark);">${c.country}</span>
+                  <span style="font-size:12px;color:var(--mid);">${c.sessions.toLocaleString('fr-FR')} · ${pct}%</span>
+                </div>
+                <div style="height:4px;background:var(--light);border-radius:2px;">
+                  <div style="height:4px;background:var(--purple);border-radius:2px;width:${pct}%;"></div>
+                </div>
               </div>
-              <div style="height:4px;background:var(--light);border-radius:2px;">
-                <div style="height:4px;background:var(--purple);border-radius:2px;width:${pct}%;"></div>
-              </div>
-            </div>
-          </div>`;
-        }).join('');
+            </div>`;
+          }).join('');
+        } else {
+          countriesEl.innerHTML = '<div style="color:var(--mid);font-size:13px;">Aucune donnée disponible.</div>';
+        }
       }
 
       // Devices
@@ -2141,26 +2145,34 @@
       const devLabels = { 'mobile':'Mobile','desktop':'Ordinateur','tablet':'Tablette' };
       const devColors = { 'mobile':'var(--purple)','desktop':'#22C55E','tablet':'#F59E0B' };
       const devicesEl = document.getElementById('devices-list');
-      if (devicesEl && data.devices?.length) {
-        devicesEl.innerHTML = data.devices.map(d => {
-          const key = d.device.toLowerCase();
-          const pct = totalDev > 0 ? Math.round(d.sessions / totalDev * 100) : 0;
-          return `<div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:18px;width:24px;">${devIcons[key] || '🖥'}</span>
-            <div style="flex:1;">
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-                <span style="font-size:12px;font-weight:500;color:var(--dark);">${devLabels[key] || d.device}</span>
-                <span style="font-size:12px;color:var(--mid);">${d.sessions.toLocaleString('fr-FR')} · ${pct}%</span>
+      if (devicesEl) {
+        if (data.devices?.length) {
+          devicesEl.innerHTML = data.devices.map(d => {
+            const key = d.device.toLowerCase();
+            const pct = totalDev > 0 ? Math.round(d.sessions / totalDev * 100) : 0;
+            return `<div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:18px;width:24px;">${devIcons[key] || '🖥'}</span>
+              <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                  <span style="font-size:12px;font-weight:500;color:var(--dark);">${devLabels[key] || d.device}</span>
+                  <span style="font-size:12px;color:var(--mid);">${d.sessions.toLocaleString('fr-FR')} · ${pct}%</span>
+                </div>
+                <div style="height:6px;background:var(--light);border-radius:3px;">
+                  <div style="height:6px;background:${devColors[key]||'var(--purple)'};border-radius:3px;width:${pct}%;"></div>
+                </div>
               </div>
-              <div style="height:6px;background:var(--light);border-radius:3px;">
-                <div style="height:6px;background:${devColors[key]||'var(--purple)'};border-radius:3px;width:${pct}%;"></div>
-              </div>
-            </div>
-          </div>`;
-        }).join('');
+            </div>`;
+          }).join('');
+        } else {
+          devicesEl.innerHTML = '<div style="color:var(--mid);font-size:13px;">Aucune donnée disponible.</div>';
+        }
       }
     } catch(e) {
       console.error('Erreur GA4 geo-devices:', e);
+      const countriesEl = document.getElementById('countries-list');
+      const devicesEl = document.getElementById('devices-list');
+      if (countriesEl) countriesEl.innerHTML = '<div style="color:var(--mid);font-size:13px;">Données indisponibles.</div>';
+      if (devicesEl) devicesEl.innerHTML = '<div style="color:var(--mid);font-size:13px;">Données indisponibles.</div>';
     }
   }
 

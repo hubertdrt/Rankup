@@ -347,6 +347,7 @@
     .add-kw-input::placeholder { color: #B0B2C3; }
     .btn-add-kw { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; background: var(--purple); color: white; border: none; border-radius: 10px; padding: 10px 20px; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(124,58,237,0.25); }
     .btn-add-kw:hover { background: var(--purple-dark); }
+    #kw-search-input::placeholder { color: #B0B2C3; }
     .btn-add-kw svg { width: 14px; height: 14px; }
 
     /* ══ FILTERS DRAWER (mobile) ══ */
@@ -1389,7 +1390,13 @@
     <div class="card">
       <div class="card-header">
         <div><div class="card-title">Mots-clés suivis</div><div class="card-subtitle" id="kw-subtitle">10/10 actifs — Plan gratuit</div></div>
-        <button class="card-action" onclick="exportCSV('keywords')">↓ Export CSV</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="kw-search-wrap" style="display:none;position:relative;">
+            <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--mid);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="kw-search-input" placeholder="Rechercher..." oninput="filterKeywords(this.value)" style="font-family:'Poppins',sans-serif;font-size:12px;padding:6px 10px 6px 28px;border:1.5px solid var(--border);border-radius:8px;background:var(--light);color:var(--dark);outline:none;width:160px;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--border)'"/>
+          </div>
+          <button class="card-action" onclick="exportCSV('keywords')">↓ Export CSV</button>
+        </div>
       </div>
       <div class="kw-table-wrap">
       <table class="kw-table">
@@ -2687,6 +2694,16 @@
   function renderKwFull() {
     const tbody = document.getElementById('kw-full-table');
     if (!tbody) return;
+    // Mettre à jour le subtitle
+    const subtitle = document.getElementById('kw-subtitle');
+    if (subtitle) {
+      const max = isPremium() ? '∞' : FREE_LIMITS.maxKeywords;
+      const plan = isPremium() ? 'Plan Premium' : 'Plan gratuit';
+      subtitle.textContent = `${state.keywords.length}/${max} mots-clés — ${plan}`;
+    }
+    // Afficher la barre de recherche pour les premium
+    const searchWrap = document.getElementById('kw-search-wrap');
+    if (searchWrap) searchWrap.style.display = isPremium() ? 'block' : 'none';
     const { col: kwCol, dir: kwDir } = sortState.kw;
     const kwSorted = [...state.keywords].sort((a, b) => {
       const map = { pos: 'pos', delta: 'delta', ctr: 'ctr', bounce: 'bounce' };
@@ -3542,11 +3559,21 @@
     window.location.reload();
   }
 
+  function filterKeywords(query) {
+    const q = query.toLowerCase().trim();
+    const tbody = document.getElementById('kw-full-table');
+    if (!tbody) return;
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      const kw = tr.querySelector('.kw-keyword')?.textContent.toLowerCase() || '';
+      tr.style.display = !q || kw.includes(q) ? '' : 'none';
+    });
+  }
+
   function addKeyword() {
     const input = document.getElementById('new-kw-input');
     const val = input.value.trim();
     if (!val) return;
-    showToast('Fonctionnalité à venir — suivi personnalisé de mots-clés.', 'info');
+    showToast('Les mots-clés sont automatiquement importés depuis Google Search Console. Le suivi manuel arrive bientôt !', 'info', 5000);
     input.value = '';
   }
 </script>

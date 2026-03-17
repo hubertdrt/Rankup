@@ -2084,7 +2084,8 @@
           body: JSON.stringify({ session: state.session, propertyId: state.ga4PropertyId, days })
         });
         data = await res.json();
-        lsSet(geoCacheKey, data);
+        // Ne pas cacher si les données sont vides
+        if (data.countries?.length || data.devices?.length) lsSet(geoCacheKey, data);
       }
 
       // Pays

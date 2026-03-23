@@ -79,7 +79,10 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: '50kb' }));  // limite la taille du body pour éviter les attaques par payload géant
+app.use((req, res, next) => {
+  if (req.originalUrl === '/stripe/webhook') return next();
+  express.json({ limit: '50kb' })(req, res, next);
+});  // limite la taille du body pour éviter les attaques par payload géant
 
 // ── Rate limiting ────────────────────────────────────────────────
 // Sans rate limiting, un bot peut appeler /ai/analyze en boucle
@@ -782,6 +785,87 @@ app.post('/ga4/realtime', async (req, res) => {
 // ════════════════════════════════════════
 app.get('/', (req, res) => {
   res.json({ status: 'Rankup backend OK', version: '1.1.0' });
+});
+
+// ════════════════════════════════════════
+// STRIPE — Abonnement Premium
+// ════════════════════════════════════════
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Créer une session de paiement Stripe Checkout
+app.post('/stripe/create-checkout', async (req, res) => {
+  const { session } = req.body;
+  if (!session || !sessions[session]) {
+    return res.status(401).json({ error: 'Non connecté' });
+  }
+  const { email } = sessions[session];
+
+  try {
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      customer_email: email,
+      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+      success_url: 'https://app.rankbase.fr/?payment=success',
+      cancel_url: 'https://app.rankbase.fr/?payment=cancelled',
+      metadata: { email },
+    });
+    res.json({ url: checkoutSession.url });
+  } catch (err) {
+    console.error('[Stripe checkout]', err.message);
+    res.status(500).json({ error: 'Impossible de créer la session de paiement.' });
+  }
+});
+
+// Webhook Stripe — mettre à jour le plan dans Supabase
+app.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('[Stripe webhook] Signature invalide:', err.message);
+    return res.status(400).json({ error: 'Webhook signature invalide.' });
+  }
+
+  const getEmail = (obj) => obj?.customer_email || obj?.metadata?.email || null;
+
+  try {
+    switch (event.type) {
+      // Paiement réussi → passer en premium
+      case 'checkout.session.completed':
+      case 'invoice.payment_succeeded': {
+        const email = getEmail(event.data.object);
+        if (email) {
+          await supabase.from('users').upsert({ email, plan: 'premium' });
+          console.log(`[Stripe] ${email} → premium`);
+        }
+        break;
+      }
+      // Abonnement annulé ou paiement échoué → repasser en free
+      case 'customer.subscription.deleted':
+      case 'invoice.payment_failed': {
+        const sub = event.data.object;
+        // Récupérer l'email depuis le customer Stripe
+        if (sub.customer) {
+          const customer = await stripe.customers.retrieve(sub.customer);
+          const email = customer.email;
+          if (email) {
+            await supabase.from('users').upsert({ email, plan: 'free' });
+            console.log(`[Stripe] ${email} → free`);
+          }
+        }
+        break;
+      }
+      default:
+        console.log(`[Stripe webhook] Événement ignoré: ${event.type}`);
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[Stripe webhook] Erreur traitement:', err.message);
+    res.status(500).json({ error: 'Erreur traitement webhook.' });
+  }
 });
 
 // ── Gestion des routes inexistantes ─────────────────────────────

@@ -12,5 +12,5 @@ jobs:
       - name: Ping Supabase
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.lmkfftvtoavclahtrypk.supabase.co }}/rest/v1/" \
-            -H "apikey: ${{ secrets.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxta2ZmdHZ0b2F2Y2xhaHRyeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNTc1NTQsImV4cCI6MjA4ODkzMzU1NH0.FrJuAqRAeHHWPMk-Wo_TnVLsqUDOTa-z_iBg7tPdSEU }}"
+            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"
